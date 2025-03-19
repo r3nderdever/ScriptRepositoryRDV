@@ -22,7 +22,7 @@ StatusLabel.TextStrokeTransparency = 0.5
 -- Function to find nearest player
 local function getNearestPlayer()
     local nearestPlayer = nil
-    local shortestDistance = 10 -- Max range
+    local shortestDistance = 22 -- Max range
     
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -42,8 +42,8 @@ end
 -- Teleport behind player
 local function teleportBehind(targetHRP)
     if targetHRP then
-        local direction = (HumanoidRootPart.Position - targetHRP.Position).Unit
-        local newPosition = targetHRP.Position + direction * 6
+        local direction = targetHRP.CFrame.LookVector -- Get player's forward direction
+        local newPosition = targetHRP.Position - direction * 6 -- Move 6 studs behind
         newPosition = Vector3.new(newPosition.X, HumanoidRootPart.Position.Y, newPosition.Z) -- Keep Y the same
         
         HumanoidRootPart.CFrame = CFrame.new(newPosition, targetHRP.Position)
