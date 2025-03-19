@@ -3,7 +3,9 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Camera = game.Workspace.CurrentCamera
 local Random = Random.new()
+local TweenService = game:GetService("TweenService")
 
 -- Create status text (without background)
 local ScreenGui = Instance.new("ScreenGui")
@@ -50,7 +52,7 @@ local function getRandomTeleportDistance()
     return distances[Random:NextInteger(1, #distances)]
 end
 
--- Teleport behind player
+-- Teleport smoothly behind player
 local function teleportBehind(targetHRP)
     if targetHRP then
         local direction = targetHRP.CFrame.LookVector -- Get player's forward direction
@@ -58,7 +60,24 @@ local function teleportBehind(targetHRP)
         local newPosition = targetHRP.Position - direction * randomDistance -- Move randomly 3-7 studs behind
         newPosition = Vector3.new(newPosition.X, HumanoidRootPart.Position.Y, newPosition.Z) -- Keep Y the same
         
-        HumanoidRootPart.CFrame = CFrame.new(newPosition, targetHRP.Position)
+        -- Lock camera position before teleport
+        local originalCameraType = Camera.CameraType
+        Camera.CameraType = Enum.CameraType.Scriptable
+        local originalCFrame = Camera.CFrame
+        
+        -- Smooth teleport with TweenService
+        local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = CFrame.new(newPosition, targetHRP.Position)})
+        tween:Play()
+        
+        -- Smooth camera transition
+        local cameraTween = TweenService:Create(Camera, tweenInfo, {CFrame = originalCFrame})
+        cameraTween:Play()
+        
+        -- Restore camera after teleport
+        tween.Completed:Connect(function()
+            Camera.CameraType = originalCameraType
+        end)
     end
 end
 
