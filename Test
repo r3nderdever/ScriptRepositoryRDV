@@ -3,6 +3,7 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Random = Random.new()
 
 -- Create status text (without background)
 local ScreenGui = Instance.new("ScreenGui")
@@ -19,10 +20,14 @@ StatusLabel.Font = Enum.Font.SourceSans
 StatusLabel.TextSize = 14
 StatusLabel.TextStrokeTransparency = 0.5
 
+-- Detection range table
+local detectionRanges = {15, 18, 22} -- Add preferred detection ranges here
+local maxDetectionRange = detectionRanges[#detectionRanges] -- Use the largest value
+
 -- Function to find nearest player
 local function getNearestPlayer()
     local nearestPlayer = nil
-    local shortestDistance = 22 -- Max range
+    local shortestDistance = maxDetectionRange 
     
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -39,11 +44,18 @@ local function getNearestPlayer()
     return nearestPlayer
 end
 
+-- Function to get a random teleport distance (3 studs common, 7 studs rare)
+local function getRandomTeleportDistance()
+    local distances = {3, 3, 3, 4, 4, 5, 5, 6, 7} -- More weight on 3, less on 7
+    return distances[Random:NextInteger(1, #distances)]
+end
+
 -- Teleport behind player
 local function teleportBehind(targetHRP)
     if targetHRP then
         local direction = targetHRP.CFrame.LookVector -- Get player's forward direction
-        local newPosition = targetHRP.Position - direction * 6 -- Move 6 studs behind
+        local randomDistance = getRandomTeleportDistance()
+        local newPosition = targetHRP.Position - direction * randomDistance -- Move randomly 3-7 studs behind
         newPosition = Vector3.new(newPosition.X, HumanoidRootPart.Position.Y, newPosition.Z) -- Keep Y the same
         
         HumanoidRootPart.CFrame = CFrame.new(newPosition, targetHRP.Position)
