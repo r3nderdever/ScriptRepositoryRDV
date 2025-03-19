@@ -1,0 +1,80 @@
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local camera = game.Workspace.CurrentCamera
+local teleportDelay = 0.065
+local cameraRevertDelay = 0.1
+local range = 17
+local teleportDistances = {14, 5} -- 14 or 5 studs
+local teleportActive = true
+local lastTeleportTime = 0
+
+-- Function to find the closest humanoid in range
+local function getClosestHumanoid()
+    local closestHumanoid = nil
+    local closestDistance = range
+    for _, object in pairs(workspace:FindPartsInRegion3(character.HumanoidRootPart.Position - Vector3.new(range, range, range), Vector3.new(range * 2, range * 2, range * 2), nil)) do
+        if object.Parent and object.Parent:FindFirstChild("Humanoid") then
+            local humanoid = object.Parent.Humanoid
+            local distance = (object.Parent.HumanoidRootPart.Position - humanoidRootPart.Position).Magnitude
+            if distance <= range and distance < closestDistance then
+                closestDistance = distance
+                closestHumanoid = object.Parent
+            end
+        end
+    end
+    return closestHumanoid
+end
+
+-- Function to teleport the player randomly around the humanoid
+local function teleportAroundHumanoid()
+    -- Check if enough time has passed since the last teleport
+    if tick() - lastTeleportTime < teleportDelay then
+        return
+    end
+    lastTeleportTime = tick()
+
+    -- Find closest humanoid
+    local closestHumanoid = getClosestHumanoid()
+    if not closestHumanoid then
+        return
+    end
+
+    -- Set the camera to the humanoid's position
+    camera.CameraSubject = closestHumanoid
+    camera.CameraType = Enum.CameraType.Attach
+
+    -- Calculate teleport position in a circle around the humanoid
+    local humanoidPos = closestHumanoid.HumanoidRootPart.Position
+    local randomDistance = teleportDistances[math.random(1, 2)] -- Choose either 14 or 5 studs
+    local randomAngle = math.random() * 2 * math.pi -- Random angle in radians
+
+    local newPosition = humanoidPos + Vector3.new(math.cos(randomAngle) * randomDistance, 0, math.sin(randomAngle) * randomDistance)
+    local targetCFrame = CFrame.new(newPosition, humanoidPos) -- Teleport behind the humanoid
+
+    -- Safely teleport the player to the new position
+    humanoidRootPart.CFrame = targetCFrame
+
+    -- Make the player face the humanoid after teleporting
+    humanoidRootPart.CFrame = CFrame.lookAt(humanoidRootPart.Position, closestHumanoid.HumanoidRootPart.Position)
+
+    -- Wait for the teleport delay
+    wait(teleportDelay)
+    
+    -- Revert the camera back to the player after 0.1 seconds of no teleporting action
+    wait(cameraRevertDelay)
+    camera.CameraSubject = character
+    camera.CameraType = Enum.CameraType.Custom
+end
+
+-- Loop to handle teleportation
+local function teleportLoop()
+    while teleportActive do
+        teleportAroundHumanoid()
+        wait(0.05) -- Small wait to prevent too frequent looping
+    end
+end
+
+-- Start the teleportation loop
+tel
+eportLoop()
