@@ -1,4 +1,5 @@
 repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer
+wait(2)
 
 -- message me on discord " R3nderDV. " on discord if ya got any questions, not i am in ireland so my acc should have a timestamp thingymagig.
 
@@ -285,11 +286,32 @@ local function StartFruitFinder()
                     ui.updateStatus("Server Hopping...")
                     task.wait(1)
                     lastServerHop = tick()
-                    
-                    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-                    local server = servers.data[math.random(1, #servers.data)]
-                    if server then
-                        TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
+
+                    -- Fetch servers from the API
+                    local success, response = pcall(function()
+                        return game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")
+                    end)
+
+                    if success then
+                        local servers = HttpService:JSONDecode(response)
+
+                        -- Ensure the servers are available
+                        if servers and servers.data and #servers.data > 0 then
+                            local server = servers.data[math.random(1, #servers.data)]
+
+                            -- Ensure the server object is valid
+                            if server and server.id then
+                                ui.updateStatus("Teleporting to server...")
+                                -- Use TeleportService to teleport to the chosen server
+                                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
+                            else
+                                ui.updateStatus("No valid server found!")
+                            end
+                        else
+                            ui.updateStatus("No servers found or API error!")
+                        end
+                    else
+                        ui.updateStatus("Failed to fetch servers!")
                     end
                 end
             end)
