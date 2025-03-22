@@ -1,4 +1,5 @@
 repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer
+wait(2)
 
 -- this script will put a file in your executor to log any fruits, fruitlog.json, some parts of this script are scrapped from a ton of other scripts made by me and some other people, mostly by me. you can edit it to your liking but i advise you not to, for safety of your account. made by R3nderDV. on Discord. if you want you can give me like 10 rbx or smth and ill work on a script for you, more rbx = more work on it, avg 20 for a basic menu with actual working stuff or whatever.
 -- i hate lua sometimes, special thanks chatgpt for helping me just to give me extra errors
