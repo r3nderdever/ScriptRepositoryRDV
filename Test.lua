@@ -173,13 +173,5 @@ if plr.Character then
     plr.Character.ChildAdded:Connect(HandleAutoStore)
 end
 
-
-lastServerHop = tick()
-                    
-local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-local server = servers.data[math.random(1, #servers.data)]
-if server then
-TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
-
 print("Fruit Finder By R3nderDV on Discord")
 StartFruitFinder()
