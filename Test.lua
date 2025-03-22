@@ -1,8 +1,6 @@
 repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer
-wait(2)
 
--- this script will put a file in your executor to log any fruits, fruitlog.json, some parts of this script are scrapped from a ton of other scripts made by me and some other people, mostly by me. you can edit it to your liking but i advise you not to, for safety of your account. made by R3nderDV. on Discord. if you want you can give me like 10 rbx or smth and ill work on a script for you, more rbx = more work on it, avg 20 for a basic menu with actual working stuff or whatever.
--- i hate lua sometimes, special thanks chatgpt for helping me just to give me extra errors
+-- message me on discord " R3nderDV. " on discord if ya got any questions, not i am in ireland so my acc should have a timestamp thingymagig.
 
 local Players, ReplicatedStorage, TweenService, HttpService, TeleportService = 
     game:GetService("Players"), 
@@ -109,7 +107,7 @@ local function CreateUI()
     Title.BackgroundTransparency = 1
     Title.Position = UDim2.new(0, 15, 0, 0)
     Title.Size = UDim2.new(1, -30, 1, 0)
-    Title.Font = Enum.Font.ComicSans
+    Title.Font = Enum.Font.GothamBold
     Title.Text = "Fruit Finder By R3nderDV."
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
     Title.TextSize = 22
@@ -119,8 +117,8 @@ local function CreateUI()
     ToggleButton.BackgroundColor3 = Color3.fromRGB(65, 165, 65)
     ToggleButton.Position = UDim2.new(0.5, -75, 0, 70)
     ToggleButton.Size = UDim2.new(0, 150, 0, 35)
-    ToggleButton.Font = Enum.Font.ComicSans
-    ToggleButton.Text = "Active"
+    ToggleButton.Font = Enum.Font.GothamSemibold
+    ToggleButton.Text = "Working?"
     ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     ToggleButton.TextSize = 16
     Instance.new("UICorner", ToggleButton)
@@ -133,8 +131,8 @@ local function CreateUI()
     StatusLabel.Parent = StatusFrame
     StatusLabel.BackgroundTransparency = 1
     StatusLabel.Size = UDim2.new(1, 0, 1, 0)
-    StatusLabel.Font = Enum.Font.ComicSans
-    StatusLabel.Text = "Status: Searching Workspace..."
+    StatusLabel.Font = Enum.Font.GothamMedium
+    StatusLabel.Text = "Status: Looking..."
     StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     StatusLabel.TextSize = 14
     
@@ -171,7 +169,7 @@ local function CreateUI()
     ToggleButton.MouseButton1Click:Connect(function()
         Config.AutoFruit = not Config.AutoFruit
         Config.AutoStoreFruit = Config.AutoFruit
-        ToggleButton.Text = Config.AutoFruit and "Active" or "Stopped"
+        ToggleButton.Text = Config.AutoFruit and "Working?" or "Stopped"
         ToggleButton.BackgroundColor3 = Config.AutoFruit and Color3.fromRGB(65, 165, 65) or Color3.fromRGB(165, 65, 65)
     end)
     
@@ -322,5 +320,5 @@ if plr.Character then
     plr.Character.ChildAdded:Connect(HandleAutoStore)
 end
 
-print("Fruit Finder By R3nderDV. On Discord.")
+print("R3nderDV. on discord, made by rdv.")
 StartFruitFinder()
