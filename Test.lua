@@ -173,5 +173,6 @@ if plr.Character then
     plr.Character.ChildAdded:Connect(HandleAutoStore)
 end
 
+
 print("Fruit Finder By R3nderDV on Discord")
 StartFruitFinder()
