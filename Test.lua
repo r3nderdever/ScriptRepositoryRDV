@@ -135,7 +135,7 @@ local function StartFruitFinder()
                     task.wait(1)
                 end
                 
-                if not foundFruit and tick() - lastServerHop >= 3 then
+                if not foundFruit and tick() - lastServerHop >= 1 then
                     task.wait(1)
                     lastServerHop = tick()
                     
