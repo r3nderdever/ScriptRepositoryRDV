@@ -3,24 +3,24 @@ local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
-local TweenService = game:GetService("TweenService")
 
 local plr = Players.LocalPlayer
 local timer = 0
 local Config = { AutoStoreFruit = true }
 local hasJoinedTeam = false
+local hasSpawned = false
 
 local fruitsList = {
-    "Fruit ", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
-    "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit",
-    "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit",
-    "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
-    "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit",
-    "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit",
+    "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
+    "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit",
+    "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit",
+    "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit",
+    "T-Rex Fruit", "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit",
+    "Portal Fruit", "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit",
     "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
 }
 
--- ✅ **Joins Marines Before Doing Anything Else**
+-- ✅ **Waits 2 seconds before joining Marines**
 local function JoinTeam()
     task.wait(2)
     local teamRemote = ReplicatedStorage.Remotes.CommF_
@@ -29,29 +29,8 @@ local function JoinTeam()
         teamRemote:InvokeServer("SetTeam", "Marines")
     end
     
-    repeat
-        task.wait(0.5)
-    until plr.Team == game.Teams.Marines
-    
+    repeat task.wait(0.5) until plr.Team == game.Teams.Marines
     hasJoinedTeam = true
-end
-
--- ✅ **Auto-Stores Fruits**
-local function HandleAutoStore(tool)
-    if Config.AutoStoreFruit and tool:IsA("Tool") and tool.Name:find("Fruit") then
-        task.spawn(function()
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", tool:GetAttribute("OriginalName"), tool)
-        end)
-    end
-end
-
-local function AutoStoreLoop()
-    while true do
-        for _, tool in ipairs(plr.Backpack:GetChildren()) do
-            HandleAutoStore(tool)
-        end
-        task.wait(0.5)
-    end
 end
 
 -- ✅ **Finds the Nearest Fruit**
@@ -71,11 +50,10 @@ local function GetNearestFruit()
     return nearestFruit, nearestDistance
 end
 
--- ✅ **Creates UI for Fruit Info**
+-- ✅ **Creates UI Elements**
 local function CreateUI()
     local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
     
-    -- **Main Title**
     local TopText = Instance.new("TextLabel", ScreenGui)
     TopText.Size = UDim2.new(1, 0, 0.1, 0)
     TopText.Position = UDim2.new(0, 0, 0, 0)
@@ -85,7 +63,6 @@ local function CreateUI()
     TopText.TextScaled = true
     TopText.Font = Enum.Font.SourceSansBold
     
-    -- **Fruit Information**
     local FruitText = Instance.new("TextLabel", ScreenGui)
     FruitText.Size = UDim2.new(1, 0, 0.1, 0)
     FruitText.Position = UDim2.new(0, 0, 0.75, 0)
@@ -95,7 +72,6 @@ local function CreateUI()
     FruitText.TextScaled = true
     FruitText.Font = Enum.Font.SourceSansBold
     
-    -- **Snake Animation**
     local SnakeText = Instance.new("TextLabel", ScreenGui)
     SnakeText.Size = UDim2.new(1, 0, 0.1, 0)
     SnakeText.Position = UDim2.new(0, 0, 0.4, 0)
@@ -108,10 +84,11 @@ local function CreateUI()
     return FruitText, SnakeText
 end
 
--- ✅ **Updates UI Smoothly**
-local function TeleportToFruit()
-    local label, snakeText = CreateUI()
-    local hrp = plr.Character:WaitForChild("HumanoidRootPart")
+-- ✅ **Smoothly Updates UI**
+local function UpdateUI()
+    local label, snakeLabel = CreateUI()
+    local snakePatterns = {".", "..", "...", "....", ".....", "......", ".....", "....", "...", ".."}
+    local snakeIndex = 1
 
     while true do
         local nearestFruit, distance = GetNearestFruit()
@@ -122,20 +99,22 @@ local function TeleportToFruit()
             label.Text = "No fruit found"
         end
         
-        task.wait(0.02) -- **Ultra-fast updates**
+        snakeLabel.Text = snakePatterns[snakeIndex]
+        snakeIndex = (snakeIndex % #snakePatterns) + 1
+        
+        task.wait(0.1)
     end
 end
 
--- ✅ **Server Hop Now Starts Only After Marines Join**
+-- ✅ **Server Hop Only Starts After Team Join & Spawn**
 local function ServerHop()
-    repeat task.wait(0.1) until hasJoinedTeam
+    repeat task.wait(0.1) until hasJoinedTeam and hasSpawned
     
-    task.wait(2) -- Waits 2 seconds before hopping after team join
+    task.wait(2) -- **Waits 2 seconds before server hop**
     local success, response = pcall(function()
         local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
         local validServers = {}
 
-        -- Filter for active servers
         for _, server in ipairs(servers.data) do
             if server.id ~= game.JobId and server.playing < server.maxPlayers then
                 table.insert(validServers, server.id)
@@ -152,23 +131,22 @@ local function ServerHop()
     end
 end
 
--- ✅ **Ensures Player Doesn’t Separate from Humanoid**
+-- ✅ **Ensures Player is Fully Spawned Before Running Scripts**
 plr.CharacterAdded:Connect(function(char)
     task.wait(2)
     local hrp = char:WaitForChild("HumanoidRootPart")
     local humanoid = char:WaitForChild("Humanoid")
 
-    -- Ensures proper physics
     humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, true)
     humanoid.AutoRotate = true
 
+    hasSpawned = true
     JoinTeam()
-    task.spawn(TeleportToFruit)
+    task.spawn(UpdateUI)
     task.spawn(ServerHop)
 end)
 
 -- 🚀 **Start Everything**
 task.spawn(JoinTeam)
-task.spawn(AutoStoreLoop)
-task.spawn(TeleportToFruit)
+task.spawn(UpdateUI)
 task.spawn(ServerHop)
