@@ -1,42 +1,54 @@
+-- Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
 
+-- Variables
 local plr = Players.LocalPlayer
-local timer = 0
+local timer = 3
 local Config = { AutoStoreFruit = true }
-local hasJoinedTeam = false
-local hasSpawned = false
-
 local fruitsList = {
-    "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
-    "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit",
-    "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit",
-    "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit",
-    "T-Rex Fruit", "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit",
-    "Portal Fruit", "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit",
+    "Fruit", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
+    "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit",
+    "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit",
+    "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
+    "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit",
+    "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit",
     "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
 }
 
--- ✅ **Waits 2 seconds before joining Marines**
+-- Function to join Marines
+task.wait(2)
 local function JoinTeam()
-    task.wait(2)
-    local teamRemote = ReplicatedStorage.Remotes.CommF_
-    
     if plr.Team ~= game.Teams.Marines then
-        teamRemote:InvokeServer("SetTeam", "Marines")
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+        repeat task.wait(1) until plr.Team == game.Teams.Marines
     end
-    
-    repeat task.wait(0.5) until plr.Team == game.Teams.Marines
-    hasJoinedTeam = true
 end
 
--- ✅ **Finds the Nearest Fruit**
+-- Auto-Store Fruits
+local function HandleAutoStore(tool)
+    if Config.AutoStoreFruit and tool:IsA("Tool") and tool.Name:find("Fruit") then
+        task.spawn(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", tool:GetAttribute("OriginalName"), tool)
+        end)
+    end
+end
+local function AutoStoreLoop()
+    while true do
+        for _, tool in ipairs(plr.Backpack:GetChildren()) do
+            HandleAutoStore(tool)
+        end
+        task.wait(0.5)
+    end
+end
+
+-- Detect Nearest Fruit
 local function GetNearestFruit()
-    local nearestFruit = nil
-    local nearestDistance = math.huge
+    local nearestFruit, nearestDistance = nil, math.huge
     for _, fruitName in ipairs(fruitsList) do
         local fruit = Workspace:FindFirstChild(fruitName)
         if fruit and fruit:FindFirstChild("Handle") then
@@ -50,103 +62,59 @@ local function GetNearestFruit()
     return nearestFruit, nearestDistance
 end
 
--- ✅ **Creates UI Elements**
-local function CreateUI()
-    local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-    
-    local TopText = Instance.new("TextLabel", ScreenGui)
-    TopText.Size = UDim2.new(1, 0, 0.1, 0)
-    TopText.Position = UDim2.new(0, 0, 0, 0)
-    TopText.BackgroundTransparency = 1
-    TopText.Text = "Made By R3nderDV. On Discord."
-    TopText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TopText.TextScaled = true
-    TopText.Font = Enum.Font.SourceSansBold
-    
-    local FruitText = Instance.new("TextLabel", ScreenGui)
-    FruitText.Size = UDim2.new(1, 0, 0.1, 0)
-    FruitText.Position = UDim2.new(0, 0, 0.75, 0)
-    FruitText.BackgroundTransparency = 1
-    FruitText.Text = "Fruit: Searching... | Distance: N/A"
-    FruitText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    FruitText.TextScaled = true
-    FruitText.Font = Enum.Font.SourceSansBold
-    
-    local SnakeText = Instance.new("TextLabel", ScreenGui)
-    SnakeText.Size = UDim2.new(1, 0, 0.1, 0)
-    SnakeText.Position = UDim2.new(0, 0, 0.4, 0)
-    SnakeText.BackgroundTransparency = 1
-    SnakeText.Text = "......"
-    SnakeText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    SnakeText.TextScaled = true
-    SnakeText.Font = Enum.Font.SourceSansBold
-    
-    return FruitText, SnakeText
+-- Create UI for Fruit Info
+local function CreateFruitInfoUI()
+    local screenGui = Instance.new("ScreenGui", plr.PlayerGui)
+    local label = Instance.new("TextLabel", screenGui)
+    label.Size = UDim2.new(0.5, 0, 0.05, 0)
+    label.Position = UDim2.new(0.25, 0, 0.9, 0)
+    label.BackgroundTransparency = 0.5
+    label.BackgroundColor3 = Color3.new(0, 0, 0)
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextScaled = true
+    return label
 end
 
--- ✅ **Smoothly Updates UI**
-local function UpdateUI()
-    local label, snakeLabel = CreateUI()
-    local snakePatterns = {".", "..", "...", "....", ".....", "......", ".....", "....", "...", ".."}
-    local snakeIndex = 1
+local fruitLabel = CreateFruitInfoUI()
 
+-- Teleport to Nearest Fruit
+local function TeleportToFruit()
     while true do
         local nearestFruit, distance = GetNearestFruit()
-        
         if nearestFruit then
-            label.Text = "Fruit: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance) .. " studs"
+            timer = 3  -- Reset serverhop timer
+            fruitLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
+            local fruitPosition = nearestFruit.Handle.Position
+            local hrp = plr.Character:WaitForChild("HumanoidRootPart")
+            local goal = { Position = fruitPosition }
+            local tween = TweenService:Create(hrp, TweenInfo.new(distance / 200, Enum.EasingStyle.Linear), goal)
+            tween:Play()
+            task.wait(distance / 200)
         else
-            label.Text = "No fruit found"
+            timer = timer - 0.1
+            fruitLabel.Text = "No fruit found. Server hopping in " .. string.format("%.1f", timer) .. "s"
+            if timer <= 0 then
+                local success, response = pcall(function()
+                    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+                    local server = servers.data[math.random(1, #servers.data)]
+                    if server then TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id) end
+                end)
+                if not success then warn("Server hop failed: " .. response) end
+                timer = 3
+            end
         end
-        
-        snakeLabel.Text = snakePatterns[snakeIndex]
-        snakeIndex = (snakeIndex % #snakePatterns) + 1
-        
         task.wait(0.1)
     end
 end
 
--- ✅ **Server Hop Only Starts After Team Join & Spawn**
-local function ServerHop()
-    repeat task.wait(0.1) until hasJoinedTeam and hasSpawned
-    
-    task.wait(2) -- **Waits 2 seconds before server hop**
-    local success, response = pcall(function()
-        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-        local validServers = {}
-
-        for _, server in ipairs(servers.data) do
-            if server.id ~= game.JobId and server.playing < server.maxPlayers then
-                table.insert(validServers, server.id)
-            end
-        end
-        
-        if #validServers > 0 then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, validServers[math.random(1, #validServers)])
-        end
-    end)
-
-    if not success then
-        warn("Server hop failed: " .. response)
-    end
-end
-
--- ✅ **Ensures Player is Fully Spawned Before Running Scripts**
-plr.CharacterAdded:Connect(function(char)
-    task.wait(2)
-    local hrp = char:WaitForChild("HumanoidRootPart")
-    local humanoid = char:WaitForChild("Humanoid")
-
-    humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, true)
-    humanoid.AutoRotate = true
-
-    hasSpawned = true
+-- On Respawn
+plr.CharacterAdded:Connect(function()
+    task.wait(1)
     JoinTeam()
-    task.spawn(UpdateUI)
-    task.spawn(ServerHop)
+    task.spawn(TeleportToFruit)
 end)
 
--- 🚀 **Start Everything**
+-- Start Processes
 task.spawn(JoinTeam)
-task.spawn(UpdateUI)
-task.spawn(ServerHop)
+task.spawn(AutoStoreLoop)
+task.spawn(TeleportToFruit)
