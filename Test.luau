@@ -8,6 +8,7 @@ local TweenService = game:GetService("TweenService")
 local plr = Players.LocalPlayer
 local timer = 0
 local Config = { AutoStoreFruit = true }
+local hasJoinedTeam = false
 
 local fruitsList = {
     "Fruit ", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
@@ -19,13 +20,20 @@ local fruitsList = {
     "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
 }
 
--- ✅ **Ensures Player Joins Marines**
+-- ✅ **Joins Marines Before Doing Anything Else**
 local function JoinTeam()
     task.wait(2)
     local teamRemote = ReplicatedStorage.Remotes.CommF_
+    
     if plr.Team ~= game.Teams.Marines then
         teamRemote:InvokeServer("SetTeam", "Marines")
     end
+    
+    repeat
+        task.wait(0.5)
+    until plr.Team == game.Teams.Marines
+    
+    hasJoinedTeam = true
 end
 
 -- ✅ **Auto-Stores Fruits**
@@ -118,9 +126,11 @@ local function TeleportToFruit()
     end
 end
 
--- ✅ **Server Hop Works**
+-- ✅ **Server Hop Now Starts Only After Marines Join**
 local function ServerHop()
-    task.wait(1.2)
+    repeat task.wait(0.1) until hasJoinedTeam
+    
+    task.wait(2) -- Waits 2 seconds before hopping after team join
     local success, response = pcall(function()
         local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
         local validServers = {}
@@ -142,9 +152,16 @@ local function ServerHop()
     end
 end
 
--- ✅ **Respawn Handler**
-plr.CharacterAdded:Connect(function()
+-- ✅ **Ensures Player Doesn’t Separate from Humanoid**
+plr.CharacterAdded:Connect(function(char)
     task.wait(2)
+    local hrp = char:WaitForChild("HumanoidRootPart")
+    local humanoid = char:WaitForChild("Humanoid")
+
+    -- Ensures proper physics
+    humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, true)
+    humanoid.AutoRotate = true
+
     JoinTeam()
     task.spawn(TeleportToFruit)
     task.spawn(ServerHop)
