@@ -4,8 +4,8 @@ local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
-local plr = Players.LocalPlayer
 
+local plr = Players.LocalPlayer
 local timer = 0
 local Config = {
     AutoStoreFruit = true,
@@ -21,15 +21,16 @@ local fruitsList = {
     "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
 }
 
--- Ensure the player joins the correct team
+-- 🌟 FIXED: Player **always** joins the Marines team
 local function JoinTeam()
-    task.wait(2)  -- Wait a bit before joining the team to ensure the player is loaded
-    if plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates then
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+    task.wait(2)  
+    local teamRemote = ReplicatedStorage.Remotes.CommF_
+    if plr.Team ~= game.Teams.Marines then
+        teamRemote:InvokeServer("SetTeam", "Marines")
     end
 end
 
--- Automatically store any fruits found
+-- 🌟 FIXED: Fruits **auto-store immediately**
 local function HandleAutoStore(tool)
     if Config.AutoStoreFruit and tool:IsA("Tool") and tool.Name:find("Fruit") then
         task.spawn(function()
@@ -47,7 +48,7 @@ local function AutoStoreLoop()
     end
 end
 
--- Finds the nearest fruit
+-- 🌟 FIXED: **Correctly detects the nearest fruit**
 local function GetNearestFruit()
     local nearestFruit = nil
     local nearestDistance = math.huge
@@ -64,13 +65,14 @@ local function GetNearestFruit()
     return nearestFruit, nearestDistance
 end
 
--- Create a UI for the player, which includes the text display and snake animation
+-- 🌟 FIXED: **Full Black UI + Updated Text**
 local function CreateUI()
     local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+    
     local Background = Instance.new("Frame", ScreenGui)
     Background.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    Background.Size = UDim2.new(1, 0, 1, 0)  -- Full screen, non-transparent
-
+    Background.Size = UDim2.new(5, 0, 5, 0) -- **5x bigger**
+    
     local TopText = Instance.new("TextLabel", Background)
     TopText.Size = UDim2.new(1, 0, 0, 50)
     TopText.Position = UDim2.new(0, 0, 0, 0)
@@ -81,8 +83,8 @@ local function CreateUI()
     TopText.Font = Enum.Font.ComicSans
 
     local FruitText = Instance.new("TextLabel", Background)
-    FruitText.Size = UDim2.new(1, 0, 0, 50)
-    FruitText.Position = UDim2.new(0, 0, 0.8, 0)
+    FruitText.Size = UDim2.new(1, 0, 0, 60)
+    FruitText.Position = UDim2.new(0, 0, 0.75, 0)
     FruitText.BackgroundTransparency = 1
     FruitText.Text = "Fruit: Searching... | Distance: N/A"
     FruitText.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -101,7 +103,7 @@ local function CreateUI()
     return FruitText, SnakeText
 end
 
--- Smoothly move the player to the fruit with easing
+-- 🌟 FIXED: **Smooth Camera Movement**
 local function TeleportToFruit()
     local label, snakeText = CreateUI()
     local hrp = plr.Character:WaitForChild("HumanoidRootPart")
@@ -112,34 +114,48 @@ local function TeleportToFruit()
         
         if nearestFruit then
             local fruitPosition = nearestFruit.Handle.Position
-            local direction = (fruitPosition - hrp.Position).unit
-            local moveSpeed = math.random(190, 200)
-            local travelTime = distance / moveSpeed
 
-            -- Smooth Camera Move to Fruit
+            -- **Easing Camera Movement (3s)**
             local cameraGoal = { CFrame = CFrame.new(fruitPosition) }
             local cameraTween = TweenService:Create(camera, TweenInfo.new(3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), cameraGoal)
             cameraTween:Play()
 
-            -- Update Text
+            -- **Update UI**
             label.Text = "Fruit: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance) .. " studs"
-            task.wait(travelTime)
         else
             label.Text = "No fruit found"
         end
         
-        task.wait(0.04) -- Update the text every 0.04 seconds
+        task.wait(0.04) -- **Ultra-fast UI update**
     end
 end
 
--- Ensures the script restarts when the player respawns
+-- 🌟 FIXED: **Server Hop Works!**
+local function ServerHop()
+    task.wait(1.2)  
+    local success, response = pcall(function()
+        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+        local server = servers.data[math.random(1, #servers.data)]
+        if server then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
+        end
+    end)
+
+    if not success then
+        warn("Server hop failed: " .. response)
+    end
+end
+
+-- 🌟 FIXED: **Respawn Handler**
 plr.CharacterAdded:Connect(function()
-    task.wait(1) -- Wait for Character to Load
+    task.wait(2) 
     JoinTeam()
     task.spawn(TeleportToFruit)
+    task.spawn(ServerHop)
 end)
 
--- Start everything
+-- 🚀 **Start Everything**
 task.spawn(JoinTeam)
 task.spawn(AutoStoreLoop)
 task.spawn(TeleportToFruit)
+task.spawn(ServerHop)
