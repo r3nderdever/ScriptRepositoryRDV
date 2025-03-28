@@ -7,9 +7,7 @@ local TweenService = game:GetService("TweenService")
 
 local plr = Players.LocalPlayer
 local timer = 0
-local Config = {
-    AutoStoreFruit = true,
-}
+local Config = { AutoStoreFruit = true }
 
 local fruitsList = {
     "Fruit ", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
@@ -65,45 +63,39 @@ local function GetNearestFruit()
     return nearestFruit, nearestDistance
 end
 
--- ✅ **Creates Fullscreen UI with Proper Layering**
+-- ✅ **Creates UI for Fruit Info**
 local function CreateUI()
     local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
     
-    -- **Full Black Background**
-    local Background = Instance.new("Frame", ScreenGui)
-    Background.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    Background.Size = UDim2.new(2, 0, 2, 0) -- **Covers entire screen (2x size)**
-    Background.Position = UDim2.new(-0.5, 0, -0.5, 0)
-    
     -- **Main Title**
-    local TopText = Instance.new("TextLabel", Background)
+    local TopText = Instance.new("TextLabel", ScreenGui)
     TopText.Size = UDim2.new(1, 0, 0.1, 0)
     TopText.Position = UDim2.new(0, 0, 0, 0)
     TopText.BackgroundTransparency = 1
     TopText.Text = "Made By R3nderDV. On Discord."
     TopText.TextColor3 = Color3.fromRGB(255, 255, 255)
     TopText.TextScaled = true
-    TopText.Font = Enum.Font.ComicSans
+    TopText.Font = Enum.Font.SourceSansBold
     
     -- **Fruit Information**
-    local FruitText = Instance.new("TextLabel", Background)
+    local FruitText = Instance.new("TextLabel", ScreenGui)
     FruitText.Size = UDim2.new(1, 0, 0.1, 0)
     FruitText.Position = UDim2.new(0, 0, 0.75, 0)
     FruitText.BackgroundTransparency = 1
     FruitText.Text = "Fruit: Searching... | Distance: N/A"
     FruitText.TextColor3 = Color3.fromRGB(255, 255, 255)
     FruitText.TextScaled = true
-    FruitText.Font = Enum.Font.ComicSans
+    FruitText.Font = Enum.Font.SourceSansBold
     
     -- **Snake Animation**
-    local SnakeText = Instance.new("TextLabel", Background)
+    local SnakeText = Instance.new("TextLabel", ScreenGui)
     SnakeText.Size = UDim2.new(1, 0, 0.1, 0)
     SnakeText.Position = UDim2.new(0, 0, 0.4, 0)
     SnakeText.BackgroundTransparency = 1
     SnakeText.Text = "......"
     SnakeText.TextColor3 = Color3.fromRGB(255, 255, 255)
     SnakeText.TextScaled = true
-    SnakeText.Font = Enum.Font.ComicSans
+    SnakeText.Font = Enum.Font.SourceSansBold
     
     return FruitText, SnakeText
 end
@@ -122,7 +114,7 @@ local function TeleportToFruit()
             label.Text = "No fruit found"
         end
         
-        task.wait(0.04) -- **Ultra-fast updates**
+        task.wait(0.02) -- **Ultra-fast updates**
     end
 end
 
@@ -131,9 +123,17 @@ local function ServerHop()
     task.wait(1.2)
     local success, response = pcall(function()
         local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-        local server = servers.data[math.random(1, #servers.data)]
-        if server then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
+        local validServers = {}
+
+        -- Filter for active servers
+        for _, server in ipairs(servers.data) do
+            if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                table.insert(validServers, server.id)
+            end
+        end
+        
+        if #validServers > 0 then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, validServers[math.random(1, #validServers)])
         end
     end)
 
