@@ -72,6 +72,13 @@ end
 
 local fruitLabel = CreateFruitInfoUI()
 
+-- ESP Function
+local function CreateESP(object)
+    local highlight = Instance.new("SelectionCircle")
+    highlight.Adornee = object
+    highlight.Parent = object
+end
+
 -- Detect Nearest Fruit
 local function GetNearestFruit()
     local nearestFruit, nearestDistance = nil, math.huge
@@ -83,25 +90,22 @@ local function GetNearestFruit()
                 nearestDistance = distance
                 nearestFruit = fruit
             end
+            CreateESP(fruit.Handle)
         end
     end
     return nearestFruit, nearestDistance
 end
 
--- Teleport to Nearest Fruit
-local function TeleportToFruit()
-    while task.wait(0.1) do
+-- Move Towards Nearest Fruit
+local function MoveTowardsFruit()
+    while task.wait(0.06) do
         if plr.Team == game.Teams.Marines then
             local nearestFruit, distance = GetNearestFruit()
-            if nearestFruit then
-                timer = 3  -- Reset server hop timer
+            if nearestFruit and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = plr.Character.HumanoidRootPart
+                local direction = (nearestFruit.Handle.Position - hrp.Position).unit
+                hrp.CFrame = CFrame.new(hrp.Position + direction)
                 fruitLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
-                local fruitPosition = nearestFruit.Handle.Position
-                local hrp = plr.Character:WaitForChild("HumanoidRootPart")
-                local tweenTime = math.min(distance / 100, 1) -- Max speed: 100 studs per second
-                local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {Position = fruitPosition})
-                tween:Play()
-                tween.Completed:Wait()
             else
                 timer = timer - 0.1
                 fruitLabel.Text = "No fruit found. Server hopping in " .. string.format("%.1f", timer) .. "s"
@@ -130,7 +134,7 @@ end
 plr.CharacterAdded:Connect(function()
     task.wait(1)
     JoinTeam()
-    task.spawn(TeleportToFruit)
+    task.spawn(MoveTowardsFruit)
 end)
 
 -- Start Processes
@@ -138,5 +142,5 @@ JoinTeam()
 task.spawn(AutoStoreLoop)
 task.spawn(function()
     repeat task.wait(1) until plr.Team == game.Teams.Marines
-    task.spawn(TeleportToFruit)
+    task.spawn(MoveTowardsFruit)
 end)
