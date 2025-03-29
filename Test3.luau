@@ -7,6 +7,7 @@ local TeleportService = game:GetService("TeleportService")
 
 local plr = Players.LocalPlayer
 local Config = { NoFruitTime = 3 }
+local VisitedServers = {}
 
 -- **🔵 Auto Join Marines**
 task.spawn(function()
@@ -16,7 +17,14 @@ task.spawn(function()
     end
 end)
 
--- **🍏 UI Setup (Minimalist & Optimized)**
+-- **🔍 Load Visited Servers**
+pcall(function()
+    if isfile("VisitedServers.json") then
+        VisitedServers = HttpService:JSONDecode(readfile("VisitedServers.json"))
+    end
+end)
+
+-- **🍏 UI Setup**
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local UIFrame = Instance.new("Frame", ScreenGui)
 local UILabel = Instance.new("TextLabel", UIFrame)
@@ -77,44 +85,57 @@ task.spawn(function()
     end
 end)
 
--- **🌍 Server Hop System (Only Joins Servers with 3+ Players)**
-local function FindAndJoinServer()
+-- **🌍 Server Hop System (Ensures Different Server)**
+local function FindAndJoinDifferentServer()
     local PlaceID = game.PlaceId
-    local Servers
-    local success, err = pcall(function()
-        local response = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"))
-        Servers = response.data
-    end)
+    local Servers, FoundValidServer = nil, false
 
-    if not success or not Servers then
-        warn("❌ Failed to retrieve servers. Trying again later.")
-        return
+    local function GetServers()
+        local success, response = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"))
+        end)
+        return success and response and response.data or nil
     end
 
-    -- **Filter servers with 3+ players**
-    local ValidServers = {}
-    for _, server in ipairs(Servers) do
-        if server.playing >= 3 and server.playing < server.maxPlayers then
-            table.insert(ValidServers, server.id)
+    -- Try finding a new server
+    for _ = 1, 5 do -- Try multiple times in case of failure
+        Servers = GetServers()
+        if not Servers then
+            task.wait(1)
+            continue
+        end
+
+        local ValidServers = {}
+        for _, server in ipairs(Servers) do
+            if server.playing >= 3 and server.playing < server.maxPlayers and not VisitedServers[server.id] then
+                table.insert(ValidServers, server.id)
+            end
+        end
+
+        if #ValidServers > 0 then
+            local SelectedServer = ValidServers[math.random(1, #ValidServers)]
+            VisitedServers[SelectedServer] = true
+            writefile("VisitedServers.json", HttpService:JSONEncode(VisitedServers))
+
+            TeleportService:TeleportToPlaceInstance(PlaceID, SelectedServer, plr)
+            FoundValidServer = true
+            break
         end
     end
 
-    -- **If no valid servers, notify the player**
-    if #ValidServers == 0 then
-        warn("⚠️ No suitable servers found. Try again later.")
-        return
+    -- If no valid servers, retry later
+    if not FoundValidServer then
+        warn("⚠️ No completely new servers found. Retrying in 5 seconds...")
+        task.wait(5)
+        FindAndJoinDifferentServer()
     end
-
-    -- **Randomly select a server and teleport**
-    local SelectedServer = ValidServers[math.random(1, #ValidServers)]
-    TeleportService:TeleportToPlaceInstance(PlaceID, SelectedServer, plr)
 end
 
 -- **🔄 Constantly Check for Server Hop**
 task.spawn(function()
     while task.wait(0.2) do
         if Config.NoFruitTime <= 0 then
-            FindAndJoinServer()
+            FindAndJoinDifferentServer()
         end
     end
 end)
