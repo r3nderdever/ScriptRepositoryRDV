@@ -20,32 +20,11 @@ local fruitsList = {
     "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
 }
 
--- UI Setup
-local function CreateUI()
-    local screenGui = Instance.new("ScreenGui", plr.PlayerGui)
-    
-    local fruitLabel = Instance.new("TextLabel", screenGui)
-    fruitLabel.Size = UDim2.new(1, 0, 0.05, 0)
-    fruitLabel.Position = UDim2.new(0, 0, 0, 0)
-    fruitLabel.BackgroundTransparency = 0.5
-    fruitLabel.BackgroundColor3 = Color3.new(0, 0, 0)
-    fruitLabel.TextColor3 = Color3.new(1, 1, 1)
-    fruitLabel.TextScaled = true
-    fruitLabel.Text = "Distance: ??? | Blox Fruit: ??? | Time Till ServerH: ???"
-    
-    return fruitLabel
-end
-local fruitLabel = CreateUI()
-
 -- Function to join Marines
-local function CheckAndJoinTeam()
-    while true do
-        if plr.Team ~= game.Teams.Marines then
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
-        else
-            break
-        end
-        task.wait(0.5)
+local function JoinTeam()
+    if plr.Team ~= game.Teams.Marines then
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+        repeat task.wait(1) until plr.Team == game.Teams.Marines
     end
 end
 
@@ -66,25 +45,38 @@ local function AutoStoreLoop()
     end
 end
 
--- Remove water parts
-local function RemoveWaterParts()
-    for _, part in ipairs(Workspace:GetDescendants()) do
-        if part:IsA("BasePart") and part.Name:lower():find("water") then
-            part:Destroy()
-        end
-    end
+-- Create UI for Fruit Info
+local function CreateFruitInfoUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = plr:FindFirstChild("PlayerGui") or plr:WaitForChild("PlayerGui")
+    
+    local label = Instance.new("TextLabel", screenGui)
+    label.Size = UDim2.new(0.5, 0, 0.05, 0)
+    label.Position = UDim2.new(0.25, 0, 0.9, 0)
+    label.BackgroundTransparency = 0.5
+    label.BackgroundColor3 = Color3.new(0, 0, 0)
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextScaled = true
+    label.Text = "Fruit Finder Active"
+    
+    local creditLabel = Instance.new("TextLabel", screenGui)
+    creditLabel.Size = UDim2.new(1, 0, 0.05, 0)
+    creditLabel.Position = UDim2.new(0, 0, 0, 0)
+    creditLabel.BackgroundTransparency = 1
+    creditLabel.TextColor3 = Color3.new(1, 1, 1)
+    creditLabel.TextScaled = true
+    creditLabel.Text = "Made by R3nderDV. On Discord"
+    
+    return label
 end
+
+local fruitLabel = CreateFruitInfoUI()
 
 -- ESP Function
 local function CreateESP(object)
-    if not object:FindFirstChild("Highlight") then
-        local highlight = Instance.new("Highlight")
-        highlight.Name = "Highlight"
-        highlight.FillColor = Color3.fromRGB(255, 0, 0)
-        highlight.FillTransparency = 0.5
-        highlight.OutlineTransparency = 1
-        highlight.Parent = object
-    end
+    local highlight = Instance.new("SelectionCircle")
+    highlight.Adornee = object
+    highlight.Parent = object
 end
 
 -- Detect Nearest Fruit
@@ -93,7 +85,7 @@ local function GetNearestFruit()
     for _, fruitName in ipairs(fruitsList) do
         local fruit = Workspace:FindFirstChild(fruitName)
         if fruit and fruit:FindFirstChild("Handle") then
-            local distance = (plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")) and (plr.Character.HumanoidRootPart.Position - fruit.Handle.Position).Magnitude or math.huge
+            local distance = (plr.Character.HumanoidRootPart.Position - fruit.Handle.Position).Magnitude
             if distance < nearestDistance then
                 nearestDistance = distance
                 nearestFruit = fruit
@@ -104,47 +96,51 @@ local function GetNearestFruit()
     return nearestFruit, nearestDistance
 end
 
--- Movement System
-local function MoveToFruit()
-    while true do
-        local fruit, distance = GetNearestFruit()
-        if fruit and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-            fruitLabel.Text = string.format("Distance: %.2f | Blox Fruit: %s | Time Till ServerH: %.1f", distance, fruit.Name, timer)
-            
-            -- Set gravity to 0 to prevent falling
-            plr.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-            plr.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
-            
-            -- Move towards fruit
-            local direction = (fruit.Handle.Position - plr.Character.HumanoidRootPart.Position).unit * 20
-            plr.Character.HumanoidRootPart.CFrame = plr.Character.HumanoidRootPart.CFrame + direction
-        else
-            timer = timer - 0.1
-            fruitLabel.Text = string.format("Distance: ??? | Blox Fruit: ??? | Time Till ServerH: %.1f", timer)
-            if timer <= 0 then
-                ServerHop()
+-- Move Towards Nearest Fruit
+local function MoveTowardsFruit()
+    while task.wait(0.06) do
+        if plr.Team == game.Teams.Marines then
+            local nearestFruit, distance = GetNearestFruit()
+            if nearestFruit and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = plr.Character.HumanoidRootPart
+                local direction = (nearestFruit.Handle.Position - hrp.Position).unit
+                hrp.CFrame = CFrame.new(hrp.Position + direction)
+                fruitLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
+            else
+                timer = timer - 0.1
+                fruitLabel.Text = "No fruit found. Server hopping in " .. string.format("%.1f", timer) .. "s"
+                if timer <= 0 then
+                    local success, response = pcall(function()
+                        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+                        local validServers = {}
+                        for _, server in ipairs(servers.data) do
+                            if server.id ~= game.JobId then
+                                table.insert(validServers, server.id)
+                            end
+                        end
+                        if #validServers > 0 then
+                            TeleportService:TeleportToPlaceInstance(game.PlaceId, validServers[math.random(1, #validServers)])
+                        end
+                    end)
+                    if not success then warn("Server hop failed: " .. response) end
+                    timer = 3
+                end
             end
         end
-        task.wait(0.12)
     end
 end
 
--- Server Hop Function
-local function ServerHop()
-    local success, response = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-    end)
-    
-    if success and response and response.data and #response.data > 0 then
-        local server = response.data[math.random(1, #response.data)]
-        if server and server.id then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
-        end
-    end
-end
+-- On Respawn
+plr.CharacterAdded:Connect(function()
+    task.wait(1)
+    JoinTeam()
+    task.spawn(MoveTowardsFruit)
+end)
 
 -- Start Processes
-task.spawn(CheckAndJoinTeam)
+JoinTeam()
 task.spawn(AutoStoreLoop)
-task.spawn(RemoveWaterParts)
-task.spawn(MoveToFruit)
+task.spawn(function()
+    repeat task.wait(1) until plr.Team == game.Teams.Marines
+    task.spawn(MoveTowardsFruit)
+end)
