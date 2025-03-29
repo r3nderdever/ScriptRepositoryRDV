@@ -49,6 +49,15 @@ local function AutoStoreLoop()
     end
 end
 
+-- Remove water parts
+local function RemoveWaterParts()
+    for _, part in ipairs(Workspace:GetDescendants()) do
+        if part:IsA("BasePart") and part.Name:lower():find("water") then
+            part:Destroy()
+        end
+    end
+end
+
 -- Create UI for Fruit Info
 local function CreateFruitInfoUI()
     local screenGui = Instance.new("ScreenGui", plr.PlayerGui)
@@ -108,38 +117,55 @@ local function GetNearestFruit()
     return nearestFruit, nearestDistance
 end
 
--- Update UI
-local function UpdateUI(fruit, distance, timeLeft)
-    if fruit then
-        fruitLabel.Text = "Fruit: " .. fruit.Name .. " | Distance: " .. math.floor(distance) .. " | Server hop in: " .. string.format("%.1f", timeLeft) .. "s"
+-- Movement System
+local function MoveToFruit()
+    while true do
+        local fruit, distance = GetNearestFruit()
+        if fruit then
+            plr.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            plr.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+            plr.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                if distance > 50 then
+                    hrp.CFrame = hrp.CFrame:Lerp(CFrame.new(hrp.Position, fruit.Handle.Position), 0.12) * CFrame.new(0, 0, -20)
+                else
+                    hrp.CFrame = CFrame.new(fruit.Handle.Position)
+                end
+            end
+        end
+        plr.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
+        task.wait(0.12)
+    end
+end
+
+-- Server Hop Function
+local function ServerHop()
+    local servers = {}
+    local success, response = pcall(function()
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        return HttpService:JSONDecode(game:HttpGet(url))
+    end)
+
+    if success and response and response.data then
+        for _, server in ipairs(response.data) do
+            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                table.insert(servers, server.id)
+            end
+        end
+    end
+
+    if #servers > 0 then
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
     else
-        fruitLabel.Text = "No fruit found | Server hop in: " .. string.format("%.1f", timeLeft) .. "s"
+        warn("No valid servers found, retrying in 5 seconds...")
+        task.wait(5)
+        ServerHop() -- Retry
     end
 end
 
 -- Start Processes
 task.spawn(CheckAndJoinTeam)
 task.spawn(AutoStoreLoop)
-
-local timeLeft = 3
-task.spawn(function()
-    task.wait(5) -- Forcefully activate fruit finder after 5 seconds
-    while task.wait(0.024) do
-        local fruit, distance = GetNearestFruit()
-        if fruit then
-            if distance > 50 then
-                local direction = (fruit.Handle.Position - plr.Character.HumanoidRootPart.Position).unit * 3.4
-                plr.Character:Move(direction)
-            else
-                plr.Character.HumanoidRootPart.CFrame = fruit.Handle.CFrame
-            end
-            timeLeft = 3
-        else
-            timeLeft = timeLeft - 0.024
-            if timeLeft <= 0 then
-                ServerHop()
-            end
-        end
-        UpdateUI(fruit, distance, timeLeft)
-    end
-end)
+task.spawn(RemoveWaterParts)
+task.spawn(MoveToFruit)
