@@ -1,70 +1,79 @@
+-- Services
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local Players = game:GetService("Players")
 
+-- Player
 local player = Players.LocalPlayer
-local camera = Workspace.CurrentCamera
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
--- Create UI
+-- UI Setup
 local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = player:FindFirstChild("PlayerGui") or player:WaitForChild("PlayerGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
-local infoLabel = Instance.new("TextLabel")
-infoLabel.Size = UDim2.new(0.3, 0, 0.1, 0)
-infoLabel.Position = UDim2.new(0.35, 0, 0, 0)
-infoLabel.BackgroundTransparency = 0.5
-infoLabel.TextScaled = true
-infoLabel.TextColor3 = Color3.new(1, 1, 1)
-infoLabel.Parent = screenGui
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(1, 0, 0.1, 0)
+frame.Position = UDim2.new(0, 0, 0, 0)
+frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+frame.BackgroundTransparency = 0.3
+frame.Parent = screenGui
 
-local function getNearestFruit()
-    local fruits = {}
-    for _, fruitName in {
-        "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
-        "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit",
-        "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit",
-        "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
-        "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit",
-        "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit",
-        "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
-    } do
+local fruitLabel = Instance.new("TextLabel")
+fruitLabel.Size = UDim2.new(1, 0, 1, 0)
+fruitLabel.BackgroundTransparency = 1
+fruitLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+fruitLabel.TextScaled = true
+fruitLabel.Font = Enum.Font.SourceSansBold
+fruitLabel.Parent = frame
+
+-- List of fruits
+local fruitsList = {
+    "Fruit", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
+    "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit",
+    "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit",
+    "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
+    "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit",
+    "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit",
+    "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
+}
+
+-- Function to find nearest fruit
+local function findNearestFruit()
+    local nearestFruit = nil
+    local minDistance = math.huge
+    local fruitCount = 0
+    
+    for _, fruitName in ipairs(fruitsList) do
         local fruit = Workspace:FindFirstChild(fruitName)
         if fruit and fruit:FindFirstChild("Handle") then
-            table.insert(fruits, fruit.Handle)
-        end
-    end
-    
-    local nearestFruit, nearestDistance = nil, math.huge
-    for _, fruit in ipairs(fruits) do
-        local character = player.Character
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            local distance = (character.HumanoidRootPart.Position - fruit.Position).Magnitude
-            if distance < nearestDistance then
-                nearestDistance = distance
+            local distance = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
+            fruitCount = fruitCount + 1
+            
+            if distance < minDistance then
+                minDistance = distance
                 nearestFruit = fruit
             end
-        end
-        
-        -- Highlight fruits through walls
-        if not fruit:FindFirstChild("Highlight") then
-            local highlight = Instance.new("Highlight")
+            
+            -- Highlighting fruit through walls
+            local highlight = fruit:FindFirstChild("Highlight") or Instance.new("Highlight")
             highlight.Parent = fruit
             highlight.FillColor = Color3.fromRGB(255, 255, 0)
+            highlight.FillTransparency = 0.5
             highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            highlight.OutlineTransparency = 0
         end
     end
     
-    return nearestFruit, nearestDistance, #fruits
+    return nearestFruit, minDistance, fruitCount
 end
 
-local function updateUI()
-    local nearestFruit, distance, count = getNearestFruit()
+-- Update UI every 0.06 seconds
+RunService.RenderStepped:Connect(function()
+    local nearestFruit, distance, fruitCount = findNearestFruit()
     if nearestFruit then
-        infoLabel.Text = string.format("Nearest Fruit: %s\nDistance: %.2f\nTotal Fruits: %d", nearestFruit.Parent.Name, distance, count)
+        fruitLabel.Text = "🍏 Nearest: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance) .. "m\n🍎 Total Fruits: " .. fruitCount
     else
-        infoLabel.Text = "No fruits found"
+        fruitLabel.Text = "❌ No fruits found"
     end
-end
-
-RunService.RenderStepped:Connect(updateUI)
+end)
