@@ -1,5 +1,5 @@
 repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer
-task.wait(2) -- Wait 2 seconds after loading
+task.wait(7) -- Wait 2 seconds after loading
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
