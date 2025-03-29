@@ -8,7 +8,6 @@ local TweenService = game:GetService("TweenService")
 
 -- Variables
 local plr = Players.LocalPlayer
-local timer = 3
 local Config = { AutoStoreFruit = true }
 local fruitsList = {
     "Fruit", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
@@ -117,8 +116,26 @@ local function MoveTowardsFruit()
             if nearestFruit and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
                 local hrp = plr.Character.HumanoidRootPart
                 local direction = (nearestFruit.Handle.Position - hrp.Position).unit
-                hrp.CFrame = CFrame.new(hrp.Position + direction * 11)
+                hrp.CFrame = CFrame.new(hrp.Position + direction * 121)
+                
+                local waterBase = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("WaterBase-Plane")
+                if waterBase and (hrp.Position - waterBase.Position).Magnitude <= 5 then
+                    hrp.CFrame = hrp.CFrame + Vector3.new(0, 30, 0)
+                end
+                
                 fruitLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
+            else
+                if not GetNearestFruit() then
+                    task.wait(2)
+                    local success, response = pcall(function()
+                        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+                        if servers.data and #servers.data > 0 then
+                            local server = servers.data[math.random(1, #servers.data)]
+                            if server then TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id) end
+                        end
+                    end)
+                    if not success then warn("Server hop failed: " .. response) end
+                end
             end
         else
             fruitLabel.Text = "Fruit Finder Inactive"
