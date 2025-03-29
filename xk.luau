@@ -10,7 +10,7 @@ local humRoot = char:WaitForChild("HumanoidRootPart")
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Function to create buttons
+-- Function to create squircle buttons
 local function createButton(text, pos, size)
     local button = Instance.new("TextButton")
     button.Parent = screenGui
@@ -25,8 +25,11 @@ local function createButton(text, pos, size)
     button.TextScaled = true
     button.AutoButtonColor = true
     button.ClipsDescendants = true
-    button.CornerRadius = UDim.new(0, 20)
-    
+
+    local uiCorner = Instance.new("UICorner")
+    uiCorner.Parent = button
+    uiCorner.CornerRadius = UDim.new(0.4, 0) -- Squircle shape
+
     return button
 end
 
@@ -43,6 +46,7 @@ local function createShadowClone()
         if part:IsA("BasePart") then
             part.Transparency = 0.5
             part.Material = Enum.Material.SmoothPlastic
+            part.CanCollide = false
         end
     end
 
