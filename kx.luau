@@ -2,6 +2,11 @@ local player = game:GetService("Players").LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
+-- UI References
+local ui = script.Parent
+local nameLabel = ui:FindFirstChild("NameLabel")
+local countLabel = ui:FindFirstChild("CountLabel")
+
 -- List of all possible fruits
 local fruitsList = {
     "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
@@ -13,27 +18,23 @@ local fruitsList = {
     "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
 }
 
--- UI References
-local screenGui = script.Parent
-local nameLabel = screenGui:FindFirstChild("NameLabel")
-local countLabel = screenGui:FindFirstChild("CountLabel")
-
--- Function to find the nearest fruit
+-- Function to get nearest fruit
 local function getNearestFruit()
     local nearestFruit = nil
     local shortestDistance = math.huge
     local totalFruits = 0
 
     for _, fruitName in ipairs(fruitsList) do
-        local fruit = game.Workspace:FindFirstChild(fruitName)
-        if fruit and fruit:FindFirstChild("Handle") then
-            local fruitPosition = fruit.Handle.Position
-            local distance = (rootPart.Position - fruitPosition).Magnitude
-            totalFruits += 1
+        for _, fruit in ipairs(game.Workspace:GetChildren()) do
+            if fruit.Name == fruitName and fruit:FindFirstChild("Handle") then
+                local fruitPosition = fruit.Handle.Position
+                local distance = (rootPart.Position - fruitPosition).Magnitude
+                totalFruits += 1
 
-            if distance < shortestDistance then
-                shortestDistance = distance
-                nearestFruit = fruitName
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    nearestFruit = fruitName
+                end
             end
         end
     end
