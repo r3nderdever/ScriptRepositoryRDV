@@ -21,7 +21,7 @@ local fruitsList = {
 }
 
 -- Function to join Marines
-local function JoinTeam()
+local function CheckAndJoinTeam()
     while true do
         if plr.Team ~= game.Teams.Marines then
             ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
@@ -51,8 +51,7 @@ end
 
 -- Create UI for Fruit Info
 local function CreateFruitInfoUI()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Parent = plr:FindFirstChild("PlayerGui") or plr:WaitForChild("PlayerGui")
+    local screenGui = Instance.new("ScreenGui", plr.PlayerGui)
     
     local label = Instance.new("TextLabel", screenGui)
     label.Size = UDim2.new(0.5, 0, 0.05, 0)
@@ -78,15 +77,18 @@ local fruitLabel = CreateFruitInfoUI()
 
 -- ESP Function
 local function CreateESP(object)
-    local highlight = Instance.new("BillboardGui")
-    highlight.Size = UDim2.new(0, 50, 0, 50)
-    highlight.AlwaysOnTop = true
-    highlight.Parent = object
-    
-    local frame = Instance.new("Frame", highlight)
-    frame.Size = UDim2.new(1, 0, 1, 0)
-    frame.BackgroundColor3 = Color3.new(1, 0, 0)
-    frame.BackgroundTransparency = 0.5
+    if not object:FindFirstChild("ESP") then
+        local highlight = Instance.new("BillboardGui")
+        highlight.Name = "ESP"
+        highlight.Size = UDim2.new(0, 50, 0, 50)
+        highlight.AlwaysOnTop = true
+        highlight.Parent = object
+        
+        local frame = Instance.new("Frame", highlight)
+        frame.Size = UDim2.new(1, 0, 1, 0)
+        frame.BackgroundColor3 = Color3.new(1, 0, 0)
+        frame.BackgroundTransparency = 0.5
+    end
 end
 
 -- Detect Nearest Fruit
@@ -115,7 +117,7 @@ local function MoveTowardsFruit()
             if nearestFruit and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
                 local hrp = plr.Character.HumanoidRootPart
                 local direction = (nearestFruit.Handle.Position - hrp.Position).unit
-                hrp.CFrame = CFrame.new(hrp.Position + direction)
+                hrp.CFrame = CFrame.new(hrp.Position + direction * 1)
                 fruitLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
             end
         else
@@ -131,6 +133,6 @@ plr.CharacterAdded:Connect(function()
 end)
 
 -- Start Processes
-task.spawn(JoinTeam)
+task.spawn(CheckAndJoinTeam)
 task.spawn(AutoStoreLoop)
 task.spawn(MoveTowardsFruit)
