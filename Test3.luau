@@ -7,12 +7,12 @@ local HttpService = game:GetService("HttpService")
 
 -- Variables
 local plr = Players.LocalPlayer
-local timer = 3
-local Config = { AutoStoreFruit = true }
+local serverHopTimer = 4 -- Time till server hop when no fruit is found
 local teleportSpeed = 150 -- studs per second
 local teleportIncrement = 0.4 -- studs per step
 local teleportInterval = 0.002 -- seconds per step
 local instantTeleportRadius = 50 -- studs
+local lastFruitTime = tick()
 
 local fruitsList = {
     "Fruit", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
@@ -23,6 +23,17 @@ local fruitsList = {
     "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit",
     "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
 }
+
+-- UI Setup
+local screenGui = Instance.new("ScreenGui", plr:FindFirstChild("PlayerGui") or plr:WaitForChild("PlayerGui"))
+local infoLabel = Instance.new("TextLabel", screenGui)
+infoLabel.Size = UDim2.new(0.5, 0, 0.05, 0)
+infoLabel.Position = UDim2.new(0.25, 0, 0.9, 0)
+infoLabel.BackgroundTransparency = 0.5
+infoLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+infoLabel.TextColor3 = Color3.new(1, 1, 1)
+infoLabel.TextScaled = true
+infoLabel.Text = "Searching for fruit..."
 
 -- Function to join Marines
 local function JoinTeam()
@@ -55,12 +66,20 @@ local function MoveTowardsFruit()
             local hrp = plr.Character.HumanoidRootPart
             local nearestFruit, distance = GetNearestFruit()
             if nearestFruit and distance > 1 then -- Avoid unnecessary movement
+                lastFruitTime = tick()
                 if distance <= instantTeleportRadius then
                     hrp.CFrame = nearestFruit.Handle.CFrame -- Instant teleport if within radius
                 else
                     local direction = (nearestFruit.Handle.Position - hrp.Position).unit
                     local stepSize = math.min(teleportSpeed * teleportInterval, distance)
                     hrp.CFrame = hrp.CFrame + direction * stepSize
+                end
+                infoLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
+            else
+                local timeSinceLastFruit = tick() - lastFruitTime
+                infoLabel.Text = "No fruit found. Server hopping in " .. string.format("%.1f", math.max(0, serverHopTimer - timeSinceLastFruit)) .. "s"
+                if timeSinceLastFruit >= serverHopTimer then
+                    ServerHop()
                 end
             end
         end
