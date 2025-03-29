@@ -6,7 +6,7 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 
 local plr = Players.LocalPlayer
-local Config = { NoFruitTime = 3 }
+local Config = { NoFruitTime = 3, ServerHopActive = false }
 
 -- **🔵 Auto Join Marines**
 local function JoinMarines()
@@ -29,15 +29,6 @@ local ValidFruits = {
     ["Dough Fruit"] = true, ["Dragon (West) Fruit"] = true, ["Dragon (East) Fruit"] = true, ["Kitsune Fruit"] = true, ["Gas Fruit"] = true,
     ["Yeti Fruit"] = true
 }
-
--- **🛠️ Auto Store Fruits**
-local function StoreFruit(tool)
-    if tool:IsA("Tool") and ValidFruits[tool.Name] then
-        task.spawn(function()
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", tool:GetAttribute("OriginalName"), tool)
-        end)
-    end
-end
 
 -- **📜 UI Setup**
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
@@ -120,28 +111,29 @@ end
 
 task.spawn(TeleportToNearestFruit)
 
--- **🌍 Server Hop (Only if No Fruits for 3 Seconds)**
+-- **🌍 HTTP-Based Server Hop**
 local function ServerHop()
-    if Config.NoFruitTime > 0 then return end
+    if Config.ServerHopActive then return end
+    Config.ServerHopActive = true
 
-    task.wait(1)
-
-    local success, servers = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-    end)
-
-    if success and servers and servers.data and #servers.data > 0 then
-        local validServers = {}
-
-        for _, server in ipairs(servers.data) do
-            if server.playing >= 3 and server.playing <= 11 and server.id ~= game.JobId then
-                table.insert(validServers, server.id)
-            end
+    while task.wait(0.2) do
+        if Config.NoFruitTime > 0 then
+            Config.ServerHopActive = false
+            break
         end
 
-        if #validServers > 0 then
-            TimerLabel.Text = "🌍 Server Hopping..."
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, validServers[math.random(1, #validServers)])
+        local success, servers = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+        end)
+
+        if success and servers and servers.data and #servers.data > 0 then
+            for _, server in ipairs(servers.data) do
+                if server.playing >= 3 and server.id ~= game.JobId then
+                    TimerLabel.Text = "🌍 Server Hopping..."
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
+                    return
+                end
+            end
         end
     end
 end
@@ -157,19 +149,15 @@ task.spawn(function()
     while task.wait(1) do
         pcall(function()
             for _, fr in ipairs(plr.Backpack:GetChildren()) do
-                StoreFruit(fr)
+                if ValidFruits[fr.Name] then
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fr:GetAttribute("OriginalName"), fr)
+                end
             end
             for _, fr in ipairs(plr.Character:GetChildren()) do
-                StoreFruit(fr)
+                if ValidFruits[fr.Name] then
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fr:GetAttribute("OriginalName"), fr)
+                end
             end
         end)
     end
 end)
-
-plr.CharacterAdded:Connect(function(char)
-    char.ChildAdded:Connect(StoreFruit)
-end)
-
-if plr.Character then
-    plr.Character.ChildAdded:Connect(StoreFruit)
-end
