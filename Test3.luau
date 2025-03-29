@@ -10,13 +10,14 @@ local Players, ReplicatedStorage, HttpService, TeleportService, TweenService =
 local plr = Players.LocalPlayer
 local Config = {
     AutoFruit = true,
-    FruitLog = {},
-    AutoEquip = true
+    AutoEquip = true,
+    FruitLog = {}
 }
 
 local lastServerHop = tick()
 local serversTried = {}
 
+-- Load and Save Fruit Log
 local function LoadFruitLog()
     if isfile("fruitlog.json") then
         Config.FruitLog = HttpService:JSONDecode(readfile("fruitlog.json"))
@@ -35,16 +36,18 @@ local function LogFruit(fruitName)
     SaveFruitLog()
 end
 
+-- Find BasePart for Models
 local function FindBasePart(model)
     for _, v in ipairs(model:GetDescendants()) do
         if v:IsA("BasePart") then return v end
     end
 end
 
+-- Collect Fruit
 local function CollectItem(item)
     if not item then return false end
 
-    -- Skip if the player already has the fruit
+    -- Ensure the player doesn't already have the fruit
     for _, heldItem in ipairs(plr.Backpack:GetChildren()) do
         if heldItem:IsA("Tool") and heldItem.Name == item.Name then
             return false
@@ -79,12 +82,13 @@ local function CollectItem(item)
                     LogFruit("Model Fruit")
                     return true
                 end
-            until tick() - startTime > 10
+            until tick() - startTime > 5
         end
     end
     return false
 end
 
+-- Constantly Equip First Item
 local function EquipFirstItem()
     while task.wait(0.5) do
         if Config.AutoEquip then
@@ -105,6 +109,7 @@ end
 
 task.spawn(EquipFirstItem)
 
+-- Create UI
 local function CreateUI()
     local ui = {}
     local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
@@ -157,6 +162,7 @@ end
 
 local ui = CreateUI()
 
+-- Start Fruit Finder
 local function StartFruitFinder()
     while task.wait() do
         if Config.AutoFruit then
@@ -190,7 +196,7 @@ local function StartFruitFinder()
                 if not foundFruit and tick() - lastServerHop >= 1 then
                     lastServerHop = tick()
                     ui.updateStatus("Server Hopping...")
-                    
+
                     local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
                     for _, server in ipairs(servers.data) do
                         if not serversTried[server.id] then
