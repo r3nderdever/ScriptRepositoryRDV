@@ -6,9 +6,16 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 
 local plr = Players.LocalPlayer
-local Config = {
-    NoFruitTime = 0 -- Timer to track how long no fruits are found
-}
+local Config = { NoFruitTime = 0 }
+
+-- **🔵 Auto Join Marines**
+local function JoinMarines()
+    while plr.Team ~= game.Teams.Marines do
+        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
+        task.wait(1)
+    end
+end
+task.spawn(JoinMarines)
 
 -- **✅ List of Valid Fruits**
 local ValidFruits = {
@@ -23,9 +30,32 @@ local ValidFruits = {
     ["Yeti Fruit"] = true
 }
 
+-- **📜 UI Setup**
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local UIFrame = Instance.new("Frame", ScreenGui)
+local UIText = Instance.new("TextLabel", UIFrame)
+
+ScreenGui.ResetOnSpawn = false
+UIFrame.Size = UDim2.new(0, 250, 0, 100)
+UIFrame.Position = UDim2.new(0.5, -125, 0.1, 0)
+UIFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Black
+UIFrame.BorderSizePixel = 3
+UIFrame.BorderColor3 = Color3.fromRGB(255, 140, 0) -- Orange outline
+UIFrame.BackgroundTransparency = 0.3
+
+UIText.Size = UDim2.new(1, 0, 1, 0)
+UIText.BackgroundTransparency = 1
+UIText.TextColor3 = Color3.fromRGB(255, 255, 255) -- White text
+UIText.Font = Enum.Font.Cartoon
+UIText.TextScaled = true
+UIText.Text = "🍏 Fruit Name: ???\n📍 Fruit Distance: ???\n🔍 Status: Searching...\n\n🛠️ Made by R3nderDV. on Discord"
+
+local UICorner = Instance.new("UICorner", UIFrame)
+UICorner.CornerRadius = UDim.new(0, 10) -- Rounded corners
+
 -- **🍏 Detect & Teleport to Fruits**
 local function TeleportToNearestFruit()
-    while task.wait(0.04) do -- Moves every 0.04 seconds
+    while task.wait(0.06) do -- Updates every 0.06 seconds
         if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then continue end
 
         local root = plr.Character.HumanoidRootPart
@@ -56,8 +86,10 @@ local function TeleportToNearestFruit()
                 root.CFrame = root.CFrame + direction * 8 -- Moves 8 studs every 0.04s
             end
             Config.NoFruitTime = 0 -- Reset timer since a fruit is found
+            UIText.Text = "🍏 Fruit Name: " .. closestFruit.Name .. "\n📍 Fruit Distance: " .. math.floor(closestDistance) .. "m\n✅ Status: Found!"
         else
-            Config.NoFruitTime += 0.04 -- Increase no-fruit timer
+            Config.NoFruitTime += 0.06 -- Increase no-fruit timer
+            UIText.Text = "🍏 Fruit Name: ???\n📍 Fruit Distance: ???\n🔍 Status: Searching..."
         end
     end
 end
@@ -84,6 +116,7 @@ local function ServerHop()
         end
 
         if #validServers > 0 then
+            UIText.Text = "🌍 Server Hopping..."
             TeleportService:TeleportToPlaceInstance(game.PlaceId, validServers[math.random(1, #validServers)])
         end
     end
