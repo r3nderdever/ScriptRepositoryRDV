@@ -98,7 +98,7 @@ local function TeleportToFruit()
                 fruitLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
                 local fruitPosition = nearestFruit.Handle.Position
                 local hrp = plr.Character:WaitForChild("HumanoidRootPart")
-                local tweenTime = math.min(distance / 200, 1) -- Max speed: 200 studs per second
+                local tweenTime = math.min(distance / 100, 1) -- Max speed: 100 studs per second
                 local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {Position = fruitPosition})
                 tween:Play()
                 tween.Completed:Wait()
