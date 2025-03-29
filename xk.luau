@@ -9,6 +9,9 @@ local TELEPORT_RADIUS = 32
 local DETECTION_RADIUS = 15
 local FADE_TIME = 1
 
+-- Store the player's original orientation
+local originalCFrame = root.CFrame
+
 -- Function to get all nearby players
 local function getNearbyPlayers()
     local nearby = {}
@@ -74,6 +77,9 @@ while true do
     task.wait(0.2) -- Check every 0.2 seconds
     if #getNearbyPlayers() > 0 then
         createClone()
-        root.CFrame = CFrame.new(getRandomPositionAround(root.Position, TELEPORT_RADIUS))
+        
+        -- Teleport the player to a new position
+        local newPosition = getRandomPositionAround(root.Position, TELEPORT_RADIUS)
+        root.CFrame = CFrame.new(newPosition.X, newPosition.Y, newPosition.Z, originalCFrame.LookVector.X, originalCFrame.LookVector.Y, originalCFrame.LookVector.Z, 0, 1, 0)
     end
 end
