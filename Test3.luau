@@ -7,7 +7,7 @@ local HttpService = game:GetService("HttpService")
 
 --// Variables
 local plr = Players.LocalPlayer
-local serverHopDelay = 5 -- Delay between server hop retries (seconds)
+local serverHopDelay = 1 -- Delay between server hop retries (seconds)
 local serverHopTimer = 4 -- Time until server hop when no fruit is found
 local teleportSpeed = 150 -- studs per second
 local teleportInterval = 0.002 -- seconds per step
