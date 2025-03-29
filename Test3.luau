@@ -4,14 +4,16 @@ local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
+local PhysicsService = game:GetService("PhysicsService")
 
 --// Variables
 local plr = Players.LocalPlayer
 local serverHopDelay = 5 -- Delay between server hop retries (seconds)
 local serverHopTimer = 4 -- Time until server hop when no fruit is found
-local teleportSpeed = 150 -- studs per second
-local teleportInterval = 0.002 -- seconds per step
-local instantTeleportRadius = 50 -- studs
+local teleportSpeed = 178 -- Studs per second
+local teleportInterval = 0.002 -- Seconds per step
+local instantTeleportRadius = 50 -- Studs
+local collisionRadius = 40 -- Players become solid within this range
 local lastFruitTime = tick()
 local running = true
 
@@ -25,24 +27,9 @@ local fruitsList = {
     "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
 }
 
---// UI Setup
-local function CreateUI()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Parent = plr:FindFirstChild("PlayerGui") or plr:WaitForChild("PlayerGui")
-
-    local infoLabel = Instance.new("TextLabel", screenGui)
-    infoLabel.Size = UDim2.new(0.5, 0, 0.05, 0)
-    infoLabel.Position = UDim2.new(0.25, 0, 0.9, 0)
-    infoLabel.BackgroundTransparency = 0.5
-    infoLabel.BackgroundColor3 = Color3.new(0, 0, 0)
-    infoLabel.TextColor3 = Color3.new(1, 1, 1)
-    infoLabel.TextScaled = true
-    infoLabel.Text = "Searching for fruit..."
-    
-    return infoLabel
-end
-
-local infoLabel = CreateUI()
+--// Setup Collision Groups
+PhysicsService:CreateCollisionGroup("NoCollide")
+PhysicsService:CollisionGroupSetCollidable("NoCollide", "NoCollide", false)
 
 --// Function to Join Marines Team
 local function JoinTeam()
@@ -53,6 +40,44 @@ local function JoinTeam()
         if success then
             repeat task.wait(1) until plr.Team == game.Teams.Marines
         end
+    end
+end
+
+--// Prevent Character from Being Pushed
+local function PreventPush()
+    local character = plr.Character
+    if character then
+        for _, part in ipairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.AssemblyLinearVelocity = Vector3.zero -- Prevent being pushed
+            end
+        end
+    end
+end
+
+--// Disable Gravity and Movement
+local function DisableGravity()
+    local humanoid = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
+    local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+    
+    if humanoid then
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false) -- Prevent falling
+        humanoid.PlatformStand = true -- Stops movement while teleporting
+        humanoid.AutoRotate = false -- Prevents auto-rotation
+    end
+
+    if hrp then
+        hrp.AssemblyLinearVelocity = Vector3.zero -- Stops external forces
+    end
+end
+
+--// Enable Gravity
+local function EnableGravity()
+    local humanoid = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+        humanoid.PlatformStand = false
+        humanoid.AutoRotate = true
     end
 end
 
@@ -84,64 +109,76 @@ local function MoveTowardsFruit()
         local nearestFruit, distance = GetNearestFruit()
         if nearestFruit then
             lastFruitTime = tick()
-            infoLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
 
             if distance <= instantTeleportRadius then
                 hrp.CFrame = nearestFruit.Handle.CFrame -- Instant teleport
+                EnableGravity()
             else
+                DisableGravity()
                 local direction = (nearestFruit.Handle.Position - hrp.Position).unit
                 local stepSize = math.min(teleportSpeed * teleportInterval, distance)
                 hrp.CFrame = hrp.CFrame + direction * stepSize
+                PreventPush()
             end
         else
-            local timeSinceLastFruit = tick() - lastFruitTime
-            infoLabel.Text = "No fruit found. Server hopping in " .. string.format("%.1f", math.max(0, serverHopTimer - timeSinceLastFruit)) .. "s"
-            if timeSinceLastFruit >= serverHopTimer then
+            if tick() - lastFruitTime >= serverHopTimer then
                 ServerHop()
             end
         end
     end
 end
 
---// Server Hop Function (Using Your Preferred Method)
+--// 5 Different Server Hop Methods
 local function ServerHop()
-    while running do
-        local success, servers = pcall(function()
-            return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-        end)
-
-        if success and servers and servers.data and #servers.data > 0 then
-            local server = servers.data[math.random(1, #servers.data)]
-            if server then
-                lastServerHop = tick()
+    local methods = {
+        -- Primary API Method
+        function()
+            local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+            if servers and servers.data and #servers.data > 0 then
+                local server = servers.data[math.random(1, #servers.data)]
                 TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
-                return -- Exit function after teleport
-            else
-                warn("No valid server found, retrying in " .. serverHopDelay .. "s...")
             end
-        else
-            warn("Failed to get server list, retrying in " .. serverHopDelay .. "s...")
-        end
+        end,
 
-        task.wait(serverHopDelay) -- Delay before retrying
-    end
+        -- Random Server Indexing
+        function()
+            local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=" .. math.random(50, 100)))
+            if servers and servers.data and #servers.data > 0 then
+                local server = servers.data[math.random(1, #servers.data)]
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
+            end
+        end,
+
+        -- Filtered Server Selection (Avoid low player counts)
+        function()
+            local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100"))
+            local filtered = {}
+            for _, s in ipairs(servers.data) do
+                if s.playing and s.playing > 5 then
+                    table.insert(filtered, s)
+                end
+            end
+            if #filtered > 0 then
+                local server = filtered[math.random(1, #filtered)]
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
+            end
+        end,
+
+        -- Sort By Random Criteria
+        function()
+            local sort = {"Asc", "Desc"}
+            local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=" .. sort[math.random(1, 2)] .. "&limit=100"))
+            if servers and servers.data and #servers.data > 0 then
+                local server = servers.data[math.random(1, #servers.data)]
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
+            end
+        end
+    }
+
+    local method = methods[math.random(1, #methods)]
+    method()
 end
 
 --// Start Processes
-task.spawn(function()
-    JoinTeam()
-    MoveTowardsFruit()
-end)
-
-plr.CharacterAdded:Connect(function()
-    task.wait(1)
-    JoinTeam()
-    task.spawn(MoveTowardsFruit)
-end)
-
--- Auto-recovery for script crashes
-Players.PlayerRemoving:Connect(function(leavingPlayer)
-    if leavingPlayer == plr then
-        running = false -- Stop all loops if player leaves
-    end
-end)
+task.spawn(MoveTowardsFruit)
+plr.CharacterAdded:Connect(function() task.wait(1) MoveTowardsFruit() end)
