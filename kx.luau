@@ -1,5 +1,14 @@
 local player = game:GetService("Players").LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
+
+-- Ensure character is loaded
+local function getCharacter()
+    if player.Character then
+        return player.Character
+    end
+    return player.CharacterAdded:Wait()
+end
+
+local character = getCharacter()
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
 -- UI References
@@ -18,23 +27,21 @@ local fruitsList = {
     "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
 }
 
--- Function to get nearest fruit
+-- Function to find the nearest fruit
 local function getNearestFruit()
     local nearestFruit = nil
     local shortestDistance = math.huge
     local totalFruits = 0
 
-    for _, fruitName in ipairs(fruitsList) do
-        for _, fruit in ipairs(game.Workspace:GetChildren()) do
-            if fruit.Name == fruitName and fruit:FindFirstChild("Handle") then
-                local fruitPosition = fruit.Handle.Position
-                local distance = (rootPart.Position - fruitPosition).Magnitude
-                totalFruits += 1
+    for _, fruit in ipairs(game.Workspace:GetChildren()) do
+        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+            local fruitPosition = fruit.Handle.Position
+            local distance = (rootPart.Position - fruitPosition).Magnitude
+            totalFruits += 1
 
-                if distance < shortestDistance then
-                    shortestDistance = distance
-                    nearestFruit = fruitName
-                end
+            if distance < shortestDistance then
+                shortestDistance = distance
+                nearestFruit = fruit.Name
             end
         end
     end
@@ -45,16 +52,25 @@ end
 -- UI Update Loop
 task.spawn(function()
     while true do
-        local fruitName, fruitDistance, fruitCount = getNearestFruit()
+        -- Ensure character exists
+        character = getCharacter()
+        rootPart = character:FindFirstChild("HumanoidRootPart")
 
-        -- Update UI
-        if fruitName then
-            nameLabel.Text = "🍏 Nearest Fruit: " .. fruitName .. " | " .. math.floor(fruitDistance) .. "m"
+        if rootPart then
+            local fruitName, fruitDistance, fruitCount = getNearestFruit()
+
+            -- Update UI
+            if fruitName then
+                nameLabel.Text = "🍏 Nearest Fruit: " .. fruitName .. " | " .. math.floor(fruitDistance) .. "m"
+            else
+                nameLabel.Text = "❌ No fruit detected!"
+            end
+
+            countLabel.Text = "🍇 Fruits Found: " .. fruitCount
         else
-            nameLabel.Text = "❌ No fruit detected!"
+            nameLabel.Text = "🚨 Waiting for player..."
+            countLabel.Text = "🍇 Fruits Found: 0"
         end
-
-        countLabel.Text = "🍇 Fruits Found: " .. fruitCount
 
         task.wait(0.06) -- Update every 0.06 seconds
     end
