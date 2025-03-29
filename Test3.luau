@@ -8,7 +8,7 @@ local TweenService = game:GetService("TweenService")
 
 -- Variables
 local plr = Players.LocalPlayer
-local timer = 3
+timer = 3
 local Config = { AutoStoreFruit = true }
 local fruitsList = {
     "Fruit", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
@@ -138,12 +138,32 @@ local function ServerHop()
     end
 end
 
+-- Enable Collision with Water Parts
+local function EnableWaterCollision()
+    while task.wait(0.5) do
+        for _, part in ipairs(Workspace:GetDescendants()) do
+            if part:IsA("BasePart") and string.lower(part.Name):find("water") then
+                part.CanCollide = true
+            end
+        end
+    end
+end
+
 -- Start Processes
 task.spawn(CheckAndJoinTeam)
 task.spawn(AutoStoreLoop)
+task.spawn(EnableWaterCollision)
 task.spawn(function()
-    while task.wait(1) do
-        if not GetNearestFruit() then
+    while task.wait(0.024) do
+        local fruit, distance = GetNearestFruit()
+        if fruit then
+            if distance > 50 then
+                local direction = (fruit.Handle.Position - plr.Character.HumanoidRootPart.Position).unit * 3.4
+                plr.Character:Move(direction)
+            else
+                plr.Character.HumanoidRootPart.CFrame = fruit.Handle.CFrame
+            end
+        else
             ServerHop()
         end
     end
