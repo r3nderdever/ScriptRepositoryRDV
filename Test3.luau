@@ -8,7 +8,7 @@ local TweenService = game:GetService("TweenService")
 
 -- Variables
 local plr = Players.LocalPlayer
-timer = 3
+local timer = 3
 local Config = { AutoStoreFruit = true }
 local fruitsList = {
     "Fruit", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
@@ -19,6 +19,23 @@ local fruitsList = {
     "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit",
     "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
 }
+
+-- UI Setup
+local function CreateUI()
+    local screenGui = Instance.new("ScreenGui", plr.PlayerGui)
+    
+    local fruitLabel = Instance.new("TextLabel", screenGui)
+    fruitLabel.Size = UDim2.new(1, 0, 0.05, 0)
+    fruitLabel.Position = UDim2.new(0, 0, 0, 0)
+    fruitLabel.BackgroundTransparency = 0.5
+    fruitLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+    fruitLabel.TextColor3 = Color3.new(1, 1, 1)
+    fruitLabel.TextScaled = true
+    fruitLabel.Text = "Distance: ??? | Blox Fruit: ??? | Time Till ServerH: ???"
+    
+    return fruitLabel
+end
+local fruitLabel = CreateUI()
 
 -- Function to join Marines
 local function CheckAndJoinTeam()
@@ -58,45 +75,15 @@ local function RemoveWaterParts()
     end
 end
 
--- Create UI for Fruit Info
-local function CreateFruitInfoUI()
-    local screenGui = Instance.new("ScreenGui", plr.PlayerGui)
-    
-    local label = Instance.new("TextLabel", screenGui)
-    label.Size = UDim2.new(0.5, 0, 0.05, 0)
-    label.Position = UDim2.new(0.25, 0, 0.9, 0)
-    label.BackgroundTransparency = 0.5
-    label.BackgroundColor3 = Color3.new(0, 0, 0)
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.TextScaled = true
-    label.Text = "Fruit Finder Active"
-    
-    local creditLabel = Instance.new("TextLabel", screenGui)
-    creditLabel.Size = UDim2.new(1, 0, 0.05, 0)
-    creditLabel.Position = UDim2.new(0, 0, 0, 0)
-    creditLabel.BackgroundTransparency = 1
-    creditLabel.TextColor3 = Color3.new(1, 1, 1)
-    creditLabel.TextScaled = true
-    creditLabel.Text = "Made by R3nderDV. On Discord"
-    
-    return label
-end
-
-local fruitLabel = CreateFruitInfoUI()
-
 -- ESP Function
 local function CreateESP(object)
-    if not object:FindFirstChild("ESP") then
-        local highlight = Instance.new("BillboardGui")
-        highlight.Name = "ESP"
-        highlight.Size = UDim2.new(0, 50, 0, 50)
-        highlight.AlwaysOnTop = true
+    if not object:FindFirstChild("Highlight") then
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "Highlight"
+        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 1
         highlight.Parent = object
-        
-        local frame = Instance.new("Frame", highlight)
-        frame.Size = UDim2.new(1, 0, 1, 0)
-        frame.BackgroundColor3 = Color3.new(1, 0, 0)
-        frame.BackgroundTransparency = 0.5
     end
 end
 
@@ -122,19 +109,14 @@ local function MoveToFruit()
     while true do
         local fruit, distance = GetNearestFruit()
         if fruit then
-            plr.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            plr.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
-            plr.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                if distance > 50 then
-                    hrp.CFrame = hrp.CFrame:Lerp(CFrame.new(hrp.Position, fruit.Handle.Position), 0.12) * CFrame.new(0, 0, -20)
-                else
-                    hrp.CFrame = CFrame.new(fruit.Handle.Position)
-                end
+            fruitLabel.Text = string.format("Distance: %.2f | Blox Fruit: %s | Time Till ServerH: %.1f", distance, fruit.Name, timer)
+        else
+            timer = timer - 0.1
+            fruitLabel.Text = string.format("Distance: ??? | Blox Fruit: ??? | Time Till ServerH: %.1f", timer)
+            if timer <= 0 then
+                ServerHop()
             end
         end
-        plr.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
         task.wait(0.12)
     end
 end
@@ -146,7 +128,7 @@ local function ServerHop()
         local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
         return HttpService:JSONDecode(game:HttpGet(url))
     end)
-
+    
     if success and response and response.data then
         for _, server in ipairs(response.data) do
             if server.playing < server.maxPlayers and server.id ~= game.JobId then
@@ -154,13 +136,13 @@ local function ServerHop()
             end
         end
     end
-
+    
     if #servers > 0 then
         TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
     else
         warn("No valid servers found, retrying in 5 seconds...")
         task.wait(5)
-        ServerHop() -- Retry
+        ServerHop()
     end
 end
 
