@@ -1,142 +1,165 @@
+repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer
+
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local Workspace = game:GetService("Workspace")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 
-local player = Players.LocalPlayer
-local playerGui = player:FindFirstChild("PlayerGui") or Instance.new("PlayerGui", player)
-
--- UI Creation
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = playerGui
-
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 350, 0, 200)
-mainFrame.Position = UDim2.new(0.5, -175, 0.4, -100)
-mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-mainFrame.BorderSizePixel = 0
-mainFrame.Parent = screenGui
-
--- Rounded Corners
-local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0, 15)
-uiCorner.Parent = mainFrame
-
--- Gradient Outline
-local uiStroke = Instance.new("UIStroke")
-uiStroke.Thickness = 4
-uiStroke.Parent = mainFrame
-
--- Gradient Animation
-local gradient = Instance.new("UIGradient")
-gradient.Parent = uiStroke
-gradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 0)), 
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 20, 0))
+local plr = Players.LocalPlayer
+local Config = {
+    AutoFruit = true,
+    AutoStoreFruit = true,
+    FruitLog = {}
 }
-gradient.Rotation = 0
 
--- Smooth Gradient Animation
-local function animateGradient()
-    local tween = TweenService:Create(gradient, TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 360})
-    tween:Play()
-end
-animateGradient()
-
--- Title
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundTransparency = 1
-title.Font = Enum.Font.GothamBold
-title.Text = "Fruit Finder"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.TextSize = 20
-title.Parent = mainFrame
-
--- Status Label
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(1, -20, 0, 30)
-statusLabel.Position = UDim2.new(0, 10, 0, 50)
-statusLabel.BackgroundTransparency = 1
-statusLabel.Font = Enum.Font.GothamMedium
-statusLabel.Text = "Status: Searching..."
-statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-statusLabel.TextSize = 16
-statusLabel.Parent = mainFrame
-
--- Fruit Name
-local fruitLabel = Instance.new("TextLabel")
-fruitLabel.Size = UDim2.new(1, -20, 0, 30)
-fruitLabel.Position = UDim2.new(0, 10, 0, 90)
-fruitLabel.BackgroundTransparency = 1
-fruitLabel.Font = Enum.Font.GothamMedium
-fruitLabel.Text = "Fruit: ???"
-fruitLabel.TextColor3 = Color3.fromRGB(255, 200, 50)
-fruitLabel.TextSize = 16
-fruitLabel.Parent = mainFrame
-
--- Distance Label
-local distanceLabel = Instance.new("TextLabel")
-distanceLabel.Size = UDim2.new(1, -20, 0, 30)
-distanceLabel.Position = UDim2.new(0, 10, 0, 130)
-distanceLabel.BackgroundTransparency = 1
-distanceLabel.Font = Enum.Font.GothamMedium
-distanceLabel.Text = "Distance: ???"
-distanceLabel.TextColor3 = Color3.fromRGB(255, 150, 50)
-distanceLabel.TextSize = 16
-distanceLabel.Parent = mainFrame
-
--- Credit Label
-local creditLabel = Instance.new("TextLabel")
-creditLabel.Size = UDim2.new(1, -20, 0, 20)
-creditLabel.Position = UDim2.new(0, 10, 0, 170)
-creditLabel.BackgroundTransparency = 1
-creditLabel.Font = Enum.Font.GothamItalic
-creditLabel.Text = "Made by R3nderDV. On Discord"
-creditLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-creditLabel.TextSize = 14
-creditLabel.Parent = mainFrame
-
--- Function to Find the Nearest Fruit
-local function findNearestFruit()
-    local nearestFruit = nil
-    local shortestDistance = math.huge
-    local playerPosition = player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character.HumanoidRootPart.Position
-    
-    if not playerPosition then
-        return nil
+-- **🔵 Auto Join Marines**
+local function JoinMarines()
+    while plr.Team ~= game.Teams:FindFirstChild("Marines") do
+        pcall(function()
+            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
+        end)
+        task.wait(1)
     end
+end
+task.spawn(JoinMarines)
 
-    for _, fruit in pairs(Workspace:GetChildren()) do
-        if fruit:IsA("Model") and fruit:FindFirstChild("Fruit") then
-            local fruitPosition = fruit.Fruit.Position
-            local distance = (playerPosition - fruitPosition).Magnitude
-            if distance < shortestDistance then
-                shortestDistance = distance
-                nearestFruit = fruit
+-- **📜 Load & Save Fruit Log**
+local function LoadFruitLog()
+    if isfile("fruitlog.json") then
+        Config.FruitLog = HttpService:JSONDecode(readfile("fruitlog.json"))
+    end
+end
+
+local function SaveFruitLog()
+    writefile("fruitlog.json", HttpService:JSONEncode(Config.FruitLog))
+end
+
+local function LogFruit(fruitName)
+    table.insert(Config.FruitLog, {
+        fruit = fruitName,
+        time = os.date("%Y-%m-%d %H:%M:%S")
+    })
+    SaveFruitLog()
+end
+
+task.wait(1)
+
+-- **🛠️ Auto Store Fruits**
+local function HandleAutoStore(tool)
+    if Config.AutoStoreFruit and tool:IsA("Tool") and tool.Name:find("Fruit") then
+        task.spawn(function()
+            if tool.Parent then -- Ensure tool exists before storing
+                pcall(function()
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", tool:GetAttribute("OriginalName"), tool)
+                end)
             end
+        end)
+    end
+end
+
+task.spawn(function()
+    while task.wait(2) do
+        if Config.AutoStoreFruit then
+            pcall(function()
+                for _, fr in ipairs(plr.Backpack:GetChildren()) do
+                    HandleAutoStore(fr)
+                end
+                if plr.Character then
+                    for _, fr in ipairs(plr.Character:GetChildren()) do
+                        HandleAutoStore(fr)
+                    end
+                end
+            end)
         end
     end
+end)
 
-    return nearestFruit, shortestDistance
+plr.CharacterAdded:Connect(function(char)
+    char.ChildAdded:Connect(HandleAutoStore)
+end)
+
+if plr.Character then
+    plr.Character.ChildAdded:Connect(HandleAutoStore)
 end
 
--- Function to Update UI with Fruit Information
-local function updateUI()
-    local fruit, distance = findNearestFruit()
+-- **🍏 Detect Fruits**
+local function DetectFruits(fruitLabel, statusLabel)
+    while task.wait(1) do
+        local closestFruit = nil
+        local closestDistance = math.huge
 
-    if fruit then
-        statusLabel.Text = "Status: Fruit Found!"
-        fruitLabel.Text = "Fruit: " .. fruit.Name
-        distanceLabel.Text = "Distance: " .. math.floor(distance) .. "m"
-    else
-        statusLabel.Text = "Status: Searching..."
-        fruitLabel.Text = "Fruit: ???"
-        distanceLabel.Text = "Distance: ???"
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("Tool") and v.Name:lower():find("fruit") then
+                local fruitPos = v:FindFirstChild("Handle") and v.Handle.Position
+                if fruitPos then
+                    local distance = (plr.Character.HumanoidRootPart.Position - fruitPos).magnitude
+                    if distance < closestDistance then
+                        closestDistance = distance
+                        closestFruit = v
+                    end
+                end
+            end
+        end
+
+        if closestFruit then
+            fruitLabel.Text = "🍏 Fruit Name: " .. closestFruit.Name .. "\n📍 Fruit Distance: " .. math.floor(closestDistance) .. "m"
+            statusLabel.Text = "✅ Fruit Found!"
+        else
+            fruitLabel.Text = "🍏 Fruit Name: ???\n📍 Fruit Distance: ???"
+            statusLabel.Text = "🔍 Scanning for Fruits..."
+        end
     end
 end
 
--- Continuous Search for Fruits
-while true do
-    updateUI()
-    task.wait(3) -- Updates every 3 seconds
+-- **🌍 Advanced Server Hop System**
+local function ServerHop(statusLabel)
+    statusLabel.Text = "🌍 Server Hopping..."
+    task.wait(2)
+
+    local success, servers = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+    end)
+
+    if success and servers and servers.data and #servers.data > 0 then
+        local server = servers.data[math.random(1, #servers.data)]
+        if server and server.id then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
+        end
+    else
+        statusLabel.Text = "❌ No Servers Found!"
+    end
 end
+
+-- **🚀 Run Everything**
+local function MainLoop()
+    local ScreenGui = Instance.new("ScreenGui", plr:FindFirstChildOfClass("PlayerGui"))
+    local fruitLabel = Instance.new("TextLabel")
+    local statusLabel = Instance.new("TextLabel")
+
+    fruitLabel.Parent = ScreenGui
+    statusLabel.Parent = ScreenGui
+
+    fruitLabel.Size = UDim2.new(0, 250, 0, 50)
+    fruitLabel.Position = UDim2.new(0.5, -125, 0, 50)
+    fruitLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+    fruitLabel.TextColor3 = Color3.new(1, 1, 1)
+    fruitLabel.Text = "🍏 Fruit Name: ???\n📍 Fruit Distance: ???"
+    
+    statusLabel.Size = UDim2.new(0, 250, 0, 50)
+    statusLabel.Position = UDim2.new(0.5, -125, 0, 100)
+    statusLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+    statusLabel.TextColor3 = Color3.new(1, 1, 1)
+    statusLabel.Text = "🔍 Scanning for Fruits..."
+
+    task.spawn(function()
+        DetectFruits(fruitLabel, statusLabel)
+    end)
+
+    -- **Auto Server Hop After 60s**
+    task.delay(60, function()
+        ServerHop(statusLabel)
+    end)
+end
+
+task.spawn(MainLoop)
