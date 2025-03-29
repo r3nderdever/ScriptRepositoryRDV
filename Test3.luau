@@ -16,21 +16,7 @@ task.spawn(function()
     end
 end)
 
--- **✅ Valid Fruits List**
-local ValidFruits = {
-    ["Rocket Fruit"] = true, ["Spin Fruit"] = true, ["Chop Fruit"] = true, ["Spring Fruit"] = true,
-    ["Bomb Fruit"] = true, ["Spike Fruit"] = true, ["Smoke Fruit"] = true, ["Blade Fruit"] = true,
-    ["Sand Fruit"] = true, ["Ice Fruit"] = true, ["Dark Fruit"] = true, ["Diamond Fruit"] = true,
-    ["Light Fruit"] = true, ["Rubber Fruit"] = true, ["Barrier Fruit"] = true, ["Magma Fruit"] = true,
-    ["Phoenix Fruit"] = true, ["Love Fruit"] = true, ["Spider Fruit"] = true, ["Sound Fruit"] = true,
-    ["Buddha Fruit"] = true, ["Quake Fruit"] = true, ["Gravity Fruit"] = true, ["Control Fruit"] = true,
-    ["T-Rex Fruit"] = true, ["Mammoth Fruit"] = true, ["Spirit Fruit"] = true, ["Venom Fruit"] = true,
-    ["Shadow Fruit"] = true, ["Rumble Fruit"] = true, ["Portal Fruit"] = true, ["Blizzard Fruit"] = true,
-    ["Dragon Fruit"] = true, ["Leopard Fruit"] = true, ["Dough Fruit"] = true, ["Dragon (West) Fruit"] = true,
-    ["Dragon (East) Fruit"] = true, ["Kitsune Fruit"] = true, ["Gas Fruit"] = true, ["Yeti Fruit"] = true
-}
-
--- **📜 UI Setup (Minimalist Design)**
+-- **🍏 UI Setup (Minimalist & Optimized)**
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local UIFrame = Instance.new("Frame", ScreenGui)
 local UILabel = Instance.new("TextLabel", UIFrame)
@@ -64,14 +50,12 @@ task.spawn(function()
         local closestFruit, closestDistance = nil, math.huge
 
         for _, v in ipairs(workspace:GetDescendants()) do
-            if v:IsA("Tool") and ValidFruits[v.Name] and not v.Parent:IsA("Player") then
-                local fruitPos = v:FindFirstChild("Handle") and v.Handle.Position
-                if fruitPos then
-                    local distance = (root.Position - fruitPos).Magnitude
-                    if distance < closestDistance then
-                        closestDistance = distance
-                        closestFruit = v
-                    end
+            if v:IsA("Tool") and not v.Parent:IsA("Player") and v:FindFirstChild("Handle") then
+                local fruitPos = v.Handle.Position
+                local distance = (root.Position - fruitPos).Magnitude
+                if distance < closestDistance then
+                    closestDistance = distance
+                    closestFruit = v
                 end
             end
         end
@@ -93,37 +77,44 @@ task.spawn(function()
     end
 end)
 
--- **🌍 Smarter Server Hop (Avoids Rejoining)**
-local PlaceID = game.PlaceId
-local AllIDs, foundAnything = {}, ""
-local actualHour = os.date("!*t").hour
-pcall(function()
-    AllIDs = HttpService:JSONDecode(readfile("NotSameServers.json"))
-end)
-if not AllIDs or type(AllIDs) ~= "table" then
-    AllIDs = {actualHour}
-    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
-end
+-- **🌍 Server Hop System (Only Joins Servers with 3+ Players)**
+local function FindAndJoinServer()
+    local PlaceID = game.PlaceId
+    local Servers
+    local success, err = pcall(function()
+        local response = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"))
+        Servers = response.data
+    end)
 
-local function TPReturner()
-    local Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100' .. (foundAnything ~= "" and "&cursor=" .. foundAnything or "")))
-    if Site.nextPageCursor then foundAnything = Site.nextPageCursor end
+    if not success or not Servers then
+        warn("❌ Failed to retrieve servers. Trying again later.")
+        return
+    end
 
-    for _, v in ipairs(Site.data) do
-        local ID = tostring(v.id)
-        if v.playing >= 3 and v.playing < v.maxPlayers and not table.find(AllIDs, ID) then
-            table.insert(AllIDs, ID)
-            writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
-            TeleportService:TeleportToPlaceInstance(PlaceID, ID, plr)
-            task.wait(4)
+    -- **Filter servers with 3+ players**
+    local ValidServers = {}
+    for _, server in ipairs(Servers) do
+        if server.playing >= 3 and server.playing < server.maxPlayers then
+            table.insert(ValidServers, server.id)
         end
     end
+
+    -- **If no valid servers, notify the player**
+    if #ValidServers == 0 then
+        warn("⚠️ No suitable servers found. Try again later.")
+        return
+    end
+
+    -- **Randomly select a server and teleport**
+    local SelectedServer = ValidServers[math.random(1, #ValidServers)]
+    TeleportService:TeleportToPlaceInstance(PlaceID, SelectedServer, plr)
 end
 
+-- **🔄 Constantly Check for Server Hop**
 task.spawn(function()
     while task.wait(0.2) do
         if Config.NoFruitTime <= 0 then
-            TPReturner()
+            FindAndJoinServer()
         end
     end
 end)
@@ -133,14 +124,10 @@ task.spawn(function()
     while task.wait(1) do
         pcall(function()
             for _, fr in ipairs(plr.Backpack:GetChildren()) do
-                if ValidFruits[fr.Name] then
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fr:GetAttribute("OriginalName"), fr)
-                end
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fr:GetAttribute("OriginalName"), fr)
             end
             for _, fr in ipairs(plr.Character:GetChildren()) do
-                if ValidFruits[fr.Name] then
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fr:GetAttribute("OriginalName"), fr)
-                end
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fr:GetAttribute("OriginalName"), fr)
             end
         end)
     end
