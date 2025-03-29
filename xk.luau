@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local root = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
 
 local TELEPORT_RADIUS = 18
 local DETECTION_RADIUS = 16
@@ -53,7 +54,8 @@ local function createClone()
 
     -- Fade out effect
     local startTime = tick()
-    RunService.RenderStepped:Connect(function()
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
         local elapsed = tick() - startTime
         local alpha = math.clamp(elapsed / FADE_TIME, 0, 1)
         
@@ -64,16 +66,37 @@ local function createClone()
         end
 
         if alpha >= 1 then
+            connection:Disconnect()  -- Disconnect after fading is complete
             clone:Destroy()
         end
     end)
 end
 
+-- Function to teleport the player to a random location while maintaining their facing direction
+local function teleportAndFaceDirection()
+    -- Store the player's current facing direction (orientation)
+    local currentOrientation = root.CFrame - root.Position
+    
+    -- Teleport the player to a random location
+    local teleportPosition = getRandomPositionAround(root.Position, TELEPORT_RADIUS)
+    character:SetPrimaryPartCFrame(CFrame.new(teleportPosition))
+    
+    -- Set the player to face the same direction as before the teleport
+    local newCFrame = CFrame.new(teleportPosition) * CFrame.new(currentOrientation.Position)
+    root.CFrame = newCFrame
+end
+
 -- Main loop to check for nearby players
-while true do
-    task.wait(0.2) -- Check every 0.2 seconds
-    if #getNearbyPlayers() > 0 then
-        createClone()
-        root.CFrame = CFrame.new(getRandomPositionAround(root.Position, TELEPORT_RADIUS))
+local function checkForNearbyPlayers()
+    while true do
+        task.wait(0.05) -- Check every 0.05 seconds
+        if #getNearbyPlayers() > 0 then
+            -- Teleport player to a random position and make them face the same direction
+            teleportAndFaceDirection()
+            createClone()  -- Create the clone after teleportation
+        end
     end
 end
+
+-- Start checking for nearby players in a separate thread
+spawn(checkForNearbyPlayers)
