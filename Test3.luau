@@ -7,7 +7,7 @@ local HttpService = game:GetService("HttpService")
 
 --// Variables
 local plr = Players.LocalPlayer
-local serverHopDelay = 1 -- Delay between server hop retries (seconds)
+local serverHopDelay = 5 -- Delay between server hop retries (seconds)
 local serverHopTimer = 4 -- Time until server hop when no fruit is found
 local teleportSpeed = 150 -- studs per second
 local teleportInterval = 0.002 -- seconds per step
@@ -103,30 +103,21 @@ local function MoveTowardsFruit()
     end
 end
 
---// Server Hop Function (Infinite Retries with Delay)
+--// Server Hop Function (Using Your Preferred Method)
 local function ServerHop()
     while running do
-        local success, response = pcall(function()
-            local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-            return HttpService:JSONDecode(game:HttpGet(url))
+        local success, servers = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
         end)
 
-        if success and response and response.data then
-            local availableServers = {}
-
-            -- Filter valid servers
-            for _, server in ipairs(response.data) do
-                if server.id ~= game.JobId and server.playing < server.maxPlayers then
-                    table.insert(availableServers, server.id)
-                end
-            end
-
-            -- If there are valid servers, teleport
-            if #availableServers > 0 then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, availableServers[math.random(#availableServers)])
+        if success and servers and servers.data and #servers.data > 0 then
+            local server = servers.data[math.random(1, #servers.data)]
+            if server then
+                lastServerHop = tick()
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
                 return -- Exit function after teleport
             else
-                warn("No available servers found, retrying in " .. serverHopDelay .. "s...")
+                warn("No valid server found, retrying in " .. serverHopDelay .. "s...")
             end
         else
             warn("Failed to get server list, retrying in " .. serverHopDelay .. "s...")
