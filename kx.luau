@@ -8,6 +8,17 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
+-- Auto-Join Marines Team
+local function joinMarines()
+    local teams = game:GetService("Teams")
+    local marinesTeam = teams:FindFirstChild("Marines")
+    if marinesTeam then
+        player.Team = marinesTeam
+    end
+end
+
+joinMarines()
+
 -- UI Setup
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
