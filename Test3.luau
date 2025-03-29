@@ -11,7 +11,7 @@ local plr = Players.LocalPlayer
 local timer = 3
 local Config = { AutoStoreFruit = true }
 local fruitsList = {
-    "Fruit ", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
+    "Fruit", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
     "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit",
     "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit",
     "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
@@ -45,6 +45,33 @@ local function AutoStoreLoop()
     end
 end
 
+-- Create UI for Fruit Info
+local function CreateFruitInfoUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = plr:FindFirstChild("PlayerGui") or plr:WaitForChild("PlayerGui")
+    
+    local label = Instance.new("TextLabel", screenGui)
+    label.Size = UDim2.new(0.5, 0, 0.05, 0)
+    label.Position = UDim2.new(0.25, 0, 0.9, 0)
+    label.BackgroundTransparency = 0.5
+    label.BackgroundColor3 = Color3.new(0, 0, 0)
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextScaled = true
+    label.Text = "Fruit Finder Active"
+    
+    local creditLabel = Instance.new("TextLabel", screenGui)
+    creditLabel.Size = UDim2.new(1, 0, 0.05, 0)
+    creditLabel.Position = UDim2.new(0, 0, 0, 0)
+    creditLabel.BackgroundTransparency = 1
+    creditLabel.TextColor3 = Color3.new(1, 1, 1)
+    creditLabel.TextScaled = true
+    creditLabel.Text = "Made by R3nderDV. On Discord"
+    
+    return label
+end
+
+local fruitLabel = CreateFruitInfoUI()
+
 -- Detect Nearest Fruit
 local function GetNearestFruit()
     local nearestFruit, nearestDistance = nil, math.huge
@@ -61,24 +88,6 @@ local function GetNearestFruit()
     return nearestFruit, nearestDistance
 end
 
--- Create UI for Fruit Info
-local function CreateFruitInfoUI()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Parent = plr:FindFirstChild("PlayerGui") or plr:WaitForChild("PlayerGui")
-    
-    local label = Instance.new("TextLabel", screenGui)
-    label.Size = UDim2.new(0.5, 0, 0.05, 0)
-    label.Position = UDim2.new(0.25, 0, 0.9, 0)
-    label.BackgroundTransparency = 0.5
-    label.BackgroundColor3 = Color3.new(0, 0, 0)
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.TextScaled = true
-    label.Text = "Fruit Finder Active"
-    return label
-end
-
-local fruitLabel = CreateFruitInfoUI()
-
 -- Teleport to Nearest Fruit
 local function TeleportToFruit()
     while task.wait(0.1) do
@@ -89,7 +98,8 @@ local function TeleportToFruit()
                 fruitLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
                 local fruitPosition = nearestFruit.Handle.Position
                 local hrp = plr.Character:WaitForChild("HumanoidRootPart")
-                local tween = TweenService:Create(hrp, TweenInfo.new(math.clamp(distance / 200, 0.5, 5), Enum.EasingStyle.Linear), {Position = fruitPosition})
+                local tweenTime = math.min(distance / 200, 1) -- Max speed: 200 studs per second
+                local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {Position = fruitPosition})
                 tween:Play()
                 tween.Completed:Wait()
             else
