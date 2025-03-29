@@ -110,6 +110,15 @@ local function MoveToFruit()
         local fruit, distance = GetNearestFruit()
         if fruit then
             fruitLabel.Text = string.format("Distance: %.2f | Blox Fruit: %s | Time Till ServerH: %.1f", distance, fruit.Name, timer)
+            
+            -- Set gravity to 0 to prevent falling
+            plr.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+            plr.Character.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+            
+            -- Move towards fruit
+            local direction = (fruit.Handle.Position - plr.Character.HumanoidRootPart.Position).unit * 20
+            plr.Character.HumanoidRootPart.CFrame = plr.Character.HumanoidRootPart.CFrame + direction
+            
         else
             timer = timer - 0.1
             fruitLabel.Text = string.format("Distance: ??? | Blox Fruit: ??? | Time Till ServerH: %.1f", timer)
@@ -123,26 +132,15 @@ end
 
 -- Server Hop Function
 local function ServerHop()
-    local servers = {}
     local success, response = pcall(function()
-        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-        return HttpService:JSONDecode(game:HttpGet(url))
+        return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
     end)
     
     if success and response and response.data then
-        for _, server in ipairs(response.data) do
-            if server.playing < server.maxPlayers and server.id ~= game.JobId then
-                table.insert(servers, server.id)
-            end
+        local server = response.data[math.random(1, #response.data)]
+        if server then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
         end
-    end
-    
-    if #servers > 0 then
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
-    else
-        warn("No valid servers found, retrying in 5 seconds...")
-        task.wait(5)
-        ServerHop()
     end
 end
 
