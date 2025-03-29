@@ -9,11 +9,9 @@ local HttpService = game:GetService("HttpService")
 local plr = Players.LocalPlayer
 local serverHopTimer = 4 -- Time till server hop when no fruit is found
 local teleportSpeed = 150 -- studs per second
-local teleportIncrement = 0.4 -- studs per step
 local teleportInterval = 0.002 -- seconds per step
 local instantTeleportRadius = 50 -- studs
 local lastFruitTime = tick()
-local lastServerHop = tick()
 
 local fruitsList = {
     "Fruit", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
@@ -26,7 +24,9 @@ local fruitsList = {
 }
 
 -- UI Setup
-local screenGui = Instance.new("ScreenGui", plr:FindFirstChild("PlayerGui") or plr:WaitForChild("PlayerGui"))
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = plr:FindFirstChild("PlayerGui") or plr:WaitForChild("PlayerGui")
+
 local infoLabel = Instance.new("TextLabel", screenGui)
 infoLabel.Size = UDim2.new(0.5, 0, 0.05, 0)
 infoLabel.Position = UDim2.new(0.25, 0, 0.9, 0)
@@ -39,18 +39,25 @@ infoLabel.Text = "Searching for fruit..."
 -- Function to join Marines
 local function JoinTeam()
     if plr.Team ~= game.Teams.Marines then
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
-        repeat task.wait(1) until plr.Team == game.Teams.Marines
+        local success, _ = pcall(function()
+            return ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
+        end)
+        if success then
+            repeat task.wait(1) until plr.Team == game.Teams.Marines
+        end
     end
 end
 
 -- Detect Nearest Fruit
 local function GetNearestFruit()
+    local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil, math.huge end
+    
     local nearestFruit, nearestDistance = nil, math.huge
     for _, fruitName in ipairs(fruitsList) do
         local fruit = Workspace:FindFirstChild(fruitName)
         if fruit and fruit:FindFirstChild("Handle") then
-            local distance = (plr.Character.HumanoidRootPart.Position - fruit.Handle.Position).Magnitude
+            local distance = (hrp.Position - fruit.Handle.Position).Magnitude
             if distance < nearestDistance then
                 nearestDistance = distance
                 nearestFruit = fruit
@@ -63,25 +70,26 @@ end
 -- Move Towards Nearest Fruit
 local function MoveTowardsFruit()
     while task.wait(teleportInterval) do
-        if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-            local hrp = plr.Character.HumanoidRootPart
-            local nearestFruit, distance = GetNearestFruit()
-            if nearestFruit and distance > 1 then -- Avoid unnecessary movement
-                lastFruitTime = tick()
-                if distance <= instantTeleportRadius then
-                    hrp.CFrame = nearestFruit.Handle.CFrame -- Instant teleport if within radius
-                else
-                    local direction = (nearestFruit.Handle.Position - hrp.Position).unit
-                    local stepSize = math.min(teleportSpeed * teleportInterval, distance)
-                    hrp.CFrame = hrp.CFrame + direction * stepSize
-                end
-                infoLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
+        local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then continue end
+
+        local nearestFruit, distance = GetNearestFruit()
+        if nearestFruit then
+            lastFruitTime = tick()
+            infoLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
+
+            if distance <= instantTeleportRadius then
+                hrp.CFrame = nearestFruit.Handle.CFrame -- Instant teleport
             else
-                local timeSinceLastFruit = tick() - lastFruitTime
-                infoLabel.Text = "No fruit found. Server hopping in " .. string.format("%.1f", math.max(0, serverHopTimer - timeSinceLastFruit)) .. "s"
-                if timeSinceLastFruit >= serverHopTimer then
-                    ServerHop()
-                end
+                local direction = (nearestFruit.Handle.Position - hrp.Position).unit
+                local stepSize = math.min(teleportSpeed * teleportInterval, distance)
+                hrp.CFrame = CFrame.new(hrp.Position + direction * stepSize)
+            end
+        else
+            local timeSinceLastFruit = tick() - lastFruitTime
+            infoLabel.Text = "No fruit found. Server hopping in " .. string.format("%.1f", math.max(0, serverHopTimer - timeSinceLastFruit)) .. "s"
+            if timeSinceLastFruit >= serverHopTimer then
+                ServerHop()
             end
         end
     end
@@ -89,14 +97,23 @@ end
 
 -- Server Hop Function
 local function ServerHop()
-    lastServerHop = tick()
     local success, response = pcall(function()
         local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-        local server = servers.data[math.random(1, #servers.data)]
-        if server then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
+        local availableServers = {}
+        
+        for _, server in ipairs(servers.data) do
+            if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                table.insert(availableServers, server.id)
+            end
+        end
+
+        if #availableServers > 0 then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, availableServers[math.random(#availableServers)])
+        else
+            warn("No available servers found.")
         end
     end)
+    
     if not success then warn("Server hop failed: " .. tostring(response)) end
 end
 
