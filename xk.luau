@@ -5,8 +5,8 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local root = character:WaitForChild("HumanoidRootPart")
 
-local TELEPORT_RADIUS = 16
-local DETECTION_RADIUS = 14
+local TELEPORT_RADIUS = 32
+local DETECTION_RADIUS = 15
 local FADE_TIME = 1
 
 -- Store the player's original orientation
