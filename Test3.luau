@@ -153,6 +153,9 @@ end
 task.spawn(CheckAndJoinTeam)
 task.spawn(AutoStoreLoop)
 task.spawn(EnableWaterCollision)
+
+task.wait(5)  -- Force activation after 5 seconds
+
 task.spawn(function()
     while task.wait(0.024) do
         local fruit, distance = GetNearestFruit()
