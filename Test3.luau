@@ -4,58 +4,16 @@ local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
-local TweenService = game:GetService("TweenService")
 
 --// Variables
 local plr = Players.LocalPlayer
 local webhookURL = "https://discord.com/api/webhooks/1332763994758316172/ya0sKT_D0t-iGSxH9pGyQOtYdIIa1Ekq1DrS3zbCN68MbFlw_fl1A64kRRYWCGcIZNV3"
 
-local serverHopDelay = 0.3 -- Server hop retry delay
-local teleportSpeed = 200 -- Studs per second
-local teleportInterval = 0.002 -- Smooth movement
-local instantTeleportRadius = 40 -- Studs
-local fruitDetectionTimer = 5 -- Time before server hop
+local serverHopDelay = 0.3 -- Delay between server hop attempts
+local fruitDetectionTimer = 5 -- Time before server hop if no fruit is found
 local lastFruitDetected = tick()
 
---// Create UI Panel
-local function CreateUI()
-    local screenGui = Instance.new("ScreenGui", game.CoreGui)
-    screenGui.Name = "FruitFinderUI"
-
-    local frame = Instance.new("Frame", screenGui)
-    frame.Size = UDim2.new(0, 250, 0, 140)
-    frame.Position = UDim2.new(0, 10, 0, 10)
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    frame.BorderSizePixel = 2
-    frame.Active = true
-    frame.Draggable = true
-
-    local uiCorner = Instance.new("UICorner", frame)
-    uiCorner.CornerRadius = UDim.new(0, 10)
-
-    local title = Instance.new("TextLabel", frame)
-    title.Size = UDim2.new(1, 0, 0, 30)
-    title.BackgroundTransparency = 1
-    title.Text = "🍍 Fruit Finder"
-    title.TextColor3 = Color3.fromRGB(255, 215, 0)
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 18
-
-    local info = Instance.new("TextLabel", frame)
-    info.Size = UDim2.new(1, -10, 0, 90)
-    info.Position = UDim2.new(0, 5, 0, 40)
-    info.BackgroundTransparency = 1
-    info.TextColor3 = Color3.fromRGB(255, 255, 255)
-    info.Font = Enum.Font.Gotham
-    info.TextSize = 14
-    info.TextWrapped = true
-    info.Text = "🌍 Server: N/A\n🕒 Timer: N/A\n🥭 Last Fruit: N/A\n🔄 Status: Searching..."
-
-    return info
-end
-local uiInfo = CreateUI()
-
---// Send Webhook Notification
+--// Function to send webhook notifications
 local function SendWebhookNotification(fruitName)
     local data = {
         ["username"] = "Fruit Finder",
@@ -68,39 +26,38 @@ local function SendWebhookNotification(fruitName)
                 {["name"] = "👤 Player", ["value"] = "**" .. plr.Name .. "**", ["inline"] = true},
                 {["name"] = "🌍 Server ID", ["value"] = "```" .. game.JobId .. "```", ["inline"] = false},
                 {["name"] = "⏳ Time Found", ["value"] = "```" .. os.date("%Y-%m-%d %H:%M:%S") .. "```", ["inline"] = false}
-            },
+            }
         }}
     }
-    pcall(function()
-        HttpService:PostAsync(webhookURL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson, false)
+
+    task.spawn(function()
+        local success, response = pcall(function()
+            return HttpService:PostAsync(webhookURL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson, false)
+        end)
+        
+        if not success then
+            warn("[⚠️ Webhook Failed] Retrying in 3 seconds...")
+            task.wait(3)
+            SendWebhookNotification(fruitName) -- Retry
+        end
     end)
 end
 
---// Find & Collect Fruit
-local function CollectFruit(item)
-    if item:IsA("Tool") and item.Name:find("Fruit") then
-        local fruitName = item:GetAttribute("OriginalName") or item.Name
-        print("[🍍] Found Fruit: " .. fruitName)
-
-        -- Update UI
-        uiInfo.Text = "🌍 Server: " .. game.JobId .. "\n🕒 Timer: Searching...\n🥭 Last Fruit: " .. fruitName .. "\n🔄 Status: Collecting..."
-
-        -- Move to fruit
-        plr.Character.HumanoidRootPart.CFrame = item.Handle.CFrame
+--// Constantly store fruits
+local function StoreFruits()
+    while true do
         task.wait(1)
-
-        -- Store fruit
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName, item)
-
-        -- Send webhook
-        SendWebhookNotification(fruitName)
-
-        -- Reset fruit detection timer
-        lastFruitDetected = tick()
+        pcall(function()
+            for _, tool in ipairs(plr.Backpack:GetChildren()) do
+                if tool:IsA("Tool") and tool.Name:find("Fruit") then
+                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", tool:GetAttribute("OriginalName") or tool.Name, tool)
+                end
+            end
+        end)
     end
 end
 
---// Get Nearest Fruit
+--// Get nearest fruit
 local function GetNearestFruit()
     local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil end
@@ -113,50 +70,79 @@ local function GetNearestFruit()
     return nil
 end
 
---// Move Towards Nearest Fruit
-local function MoveTowardsFruit()
-    while task.wait(teleportInterval) do
-        local nearestFruit = GetNearestFruit()
-        if nearestFruit then
-            lastFruitDetected = tick()
+--// Move towards and collect fruits
+local function CollectFruits()
+    while task.wait(0.5) do
+        pcall(function()
+            local nearestFruit = GetNearestFruit()
+            if nearestFruit then
+                lastFruitDetected = tick()
 
-            -- Instant teleport for close fruits
-            if (plr.Character.HumanoidRootPart.Position - nearestFruit.Handle.Position).Magnitude <= instantTeleportRadius then
+                -- Teleport to fruit
                 plr.Character.HumanoidRootPart.CFrame = nearestFruit.Handle.CFrame
-                CollectFruit(nearestFruit)
+                task.wait(1)
+
+                -- Store fruit
+                local fruitName = nearestFruit:GetAttribute("OriginalName") or nearestFruit.Name
+                ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName, nearestFruit)
+
+                -- Send webhook
+                SendWebhookNotification(fruitName)
             end
-        end
+        end)
     end
 end
 
---// Smart Server Hop (5-11 Players)
+--// Multiple Server Hop Systems
 local function ServerHop()
-    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100")).data
-    local validServers = {}
+    task.spawn(function()
+        while true do
+            task.wait(serverHopDelay)
 
-    for _, server in ipairs(servers) do
-        if server.playing >= 5 and server.playing <= 11 and server.id ~= game.JobId then
-            table.insert(validServers, server.id)
+            -- Fetch public servers
+            local success, servers = pcall(function()
+                return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100"))
+            end)
+
+            if success and servers and servers.data then
+                local validServers = {}
+
+                for _, server in ipairs(servers.data) do
+                    if server.playing >= 5 and server.playing <= 11 and server.id ~= game.JobId then
+                        table.insert(validServers, server.id)
+                    end
+                end
+
+                -- If valid servers found, teleport to a random one
+                if #validServers > 0 then
+                    local randomServer = validServers[math.random(1, #validServers)]
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, randomServer)
+                    return
+                end
+            end
+
+            -- Alternative method (force different server)
+            task.wait(1)
+            pcall(function()
+                TeleportService:Teleport(game.PlaceId)
+            end)
         end
-    end
-
-    if #validServers > 0 then
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, validServers[math.random(1, #validServers)])
-    else
-        task.wait(serverHopDelay)
-        ServerHop()
-    end
+    end)
 end
 
---// Start Systems
-task.spawn(MoveTowardsFruit)
-
---// Timer to Check for Fruit
+--// Timer to check for fruit & server hop
 task.spawn(function()
     while task.wait(0.3) do
-        if tick() - lastFruitDetected >= fruitDetectionTimer then
-            uiInfo.Text = "🌍 Server: " .. game.JobId .. "\n🔄 Status: Server Hopping..."
-            ServerHop()
-        end
+        pcall(function()
+            if tick() - lastFruitDetected >= fruitDetectionTimer then
+                warn("[⚠️] No fruit detected! Server hopping...")
+                ServerHop()
+            end
+        end)
     end
 end)
+
+--// Start all processes
+task.spawn(StoreFruits)
+task.spawn(CollectFruits)
+ServerHop() -- Start server hopping loop
