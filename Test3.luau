@@ -4,10 +4,12 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
 
 local plr = Players.LocalPlayer
+local placeId = game.PlaceId
 
--- Function to make sure player joins Marines on spawn
+-- **🔵 Ensure Player Joins Marines**
 local function JoinMarines()
     while plr.Team ~= game.Teams.Marines do
         ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
@@ -16,24 +18,34 @@ local function JoinMarines()
 end
 task.spawn(JoinMarines)
 
--- **🔥 Stunning Orange-Red UI Creation 🔥**
+-- **🔥 UI Creation Function**
 local function CreateUI()
     local ui = Instance.new("ScreenGui", game:GetService("CoreGui"))
     local frame = Instance.new("Frame", ui)
     local title = Instance.new("TextLabel", frame)
     local fruitLabel = Instance.new("TextLabel", frame)
+    local statusLabel = Instance.new("TextLabel", frame)
     local credit = Instance.new("TextLabel", frame)
+    local gradientFrame = Instance.new("Frame", frame)
+    local uiGradient = Instance.new("UIGradient", gradientFrame)
 
     -- **🎨 UI Styling 🎨**
-    frame.Size = UDim2.new(0, 350, 0, 200)
+    frame.Size = UDim2.new(0, 350, 0, 220)
     frame.Position = UDim2.new(0.7, -175, 0.3, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(200, 50, 30) -- 🔥 Orange-Red
+    frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Black Background
     frame.BorderSizePixel = 0
-    frame.BackgroundTransparency = 0.2
 
-    -- Rounded corners
-    local corner = Instance.new("UICorner", frame)
-    corner.CornerRadius = UDim.new(0, 15)
+    -- Gradient Outline Frame
+    gradientFrame.Size = UDim2.new(1, 8, 1, 8)
+    gradientFrame.Position = UDim2.new(0, -4, 0, -4)
+    gradientFrame.BackgroundTransparency = 1
+
+    -- **🔥 Animated Gradient Effect 🔥**
+    uiGradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 50, 30)), -- Red
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 120, 0))  -- Orange
+    }
+    uiGradient.Rotation = 0
 
     -- Title
     title.Size = UDim2.new(1, 0, 0, 30)
@@ -46,11 +58,20 @@ local function CreateUI()
     -- Fruit Label
     fruitLabel.Size = UDim2.new(1, -10, 0, 50)
     fruitLabel.Position = UDim2.new(0, 5, 0, 40)
-    fruitLabel.Text = "🔍 Searching for Fruits..."
+    fruitLabel.Text = "🍏 Fruit Name: ???\n📍 Fruit Distance: ???"
     fruitLabel.Font = Enum.Font.Gotham
     fruitLabel.TextSize = 18
     fruitLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     fruitLabel.BackgroundTransparency = 1
+
+    -- Status Label
+    statusLabel.Size = UDim2.new(1, -10, 0, 30)
+    statusLabel.Position = UDim2.new(0, 5, 0, 100)
+    statusLabel.Text = "🔍 Scanning for Fruits..."
+    statusLabel.Font = Enum.Font.Gotham
+    statusLabel.TextSize = 18
+    statusLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+    statusLabel.BackgroundTransparency = 1
 
     -- Credit Label
     credit.Size = UDim2.new(1, 0, 0, 20)
@@ -61,7 +82,11 @@ local function CreateUI()
     credit.TextColor3 = Color3.fromRGB(255, 255, 0)
     credit.BackgroundTransparency = 1
 
-    -- **Draggable UI**
+    -- Rounded Corners
+    local corner = Instance.new("UICorner", frame)
+    corner.CornerRadius = UDim.new(0, 15)
+
+    -- **🎮 Draggable UI**
     local dragging
     local dragInput
     local dragStart
@@ -97,11 +122,21 @@ local function CreateUI()
         end
     end)
 
-    return frame, fruitLabel
+    -- **🔥 Animated Gradient Effect 🔥**
+    task.spawn(function()
+        while true do
+            TweenService:Create(uiGradient, TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Rotation = 180}):Play()
+            task.wait(2)
+            TweenService:Create(uiGradient, TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut), {Rotation = 0}):Play()
+            task.wait(2)
+        end
+    end)
+
+    return frame, fruitLabel, statusLabel
 end
 
 -- **🍏 Fruit Detection System**
-local function DetectFruits(fruitLabel)
+local function DetectFruits(fruitLabel, statusLabel)
     while task.wait(1) do
         local closestFruit = nil
         local closestDistance = math.huge
@@ -120,19 +155,33 @@ local function DetectFruits(fruitLabel)
         end
 
         if closestFruit then
-            fruitLabel.Text = "🍏 Nearest Fruit: " .. closestFruit.Name .. "\n📍 Distance: " .. math.floor(closestDistance) .. "m"
+            fruitLabel.Text = "🍏 Fruit Name: " .. closestFruit.Name .. "\n📍 Fruit Distance: " .. math.floor(closestDistance) .. "m"
+            statusLabel.Text = "✅ Fruit Found!"
         else
-            fruitLabel.Text = "No Fruits Nearby!"
+            fruitLabel.Text = "🍏 Fruit Name: ???\n📍 Fruit Distance: ???"
+            statusLabel.Text = "🔍 Scanning for Fruits..."
         end
     end
 end
 
+-- **🔄 Server Hop Function**
+local function ServerHop(statusLabel)
+    statusLabel.Text = "🌍 Server Hopping..."
+    task.wait(2) 
+    TeleportService:Teleport(placeId)
+end
+
 -- **🚀 Run UI & Fruit Detection**
 local function MainLoop()
-    local frame, fruitLabel = CreateUI()
-
+    local frame, fruitLabel, statusLabel = CreateUI()
+    
     task.spawn(function()
-        DetectFruits(fruitLabel)
+        DetectFruits(fruitLabel, statusLabel)
+    end)
+
+    -- Simulating Server Hop for Testing
+    task.delay(60, function() 
+        ServerHop(statusLabel) 
     end)
 end
 
