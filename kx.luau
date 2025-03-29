@@ -7,7 +7,7 @@ local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
+then
 local function JoinTeam()
     if plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates then
         ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
