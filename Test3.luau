@@ -60,7 +60,7 @@ local function CreateFruitInfoUI()
     label.BackgroundColor3 = Color3.new(0, 0, 0)
     label.TextColor3 = Color3.new(1, 1, 1)
     label.TextScaled = true
-    label.Text = "Fruit Finder Inactive"
+    label.Text = "Fruit Finder Active"
     
     local creditLabel = Instance.new("TextLabel", screenGui)
     creditLabel.Size = UDim2.new(1, 0, 0.05, 0)
@@ -122,8 +122,7 @@ local function ServerHop()
             end
 
             if #validServers > 0 then
-                local selectedServer = validServers[math.random(1, #validServers)]
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, selectedServer)
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, validServers[math.random(1, #validServers)])
             else
                 warn("No valid servers found. Retrying...")
             end
@@ -153,10 +152,8 @@ end
 task.spawn(CheckAndJoinTeam)
 task.spawn(AutoStoreLoop)
 task.spawn(EnableWaterCollision)
-
-task.wait(5)  -- Force activation after 5 seconds
-
 task.spawn(function()
+    task.wait(5) -- Forcefully activate fruit finder after 5 seconds
     while task.wait(0.024) do
         local fruit, distance = GetNearestFruit()
         if fruit then
