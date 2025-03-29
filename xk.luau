@@ -1,80 +1,79 @@
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
+local root = character:WaitForChild("HumanoidRootPart")
 
--- Function to create the black squircle button
-local function createButton()
-    local part = Instance.new("Part")
-    part.Size = Vector3.new(4, 1, 4)
-    part.Shape = Enum.PartType.Cylinder -- Makes it a squircle-like button
-    part.Material = Enum.Material.SmoothPlastic
-    part.Color = Color3.fromRGB(0, 0, 0) -- Black color
-    part.Transparency = 0
-    part.Position = Vector3.new(0, 1, 0) -- Adjust position as needed
-    part.Anchored = true
-    part.CanCollide = false
-    part.Parent = workspace
+local TELEPORT_RADIUS = 32
+local DETECTION_RADIUS = 15
+local FADE_TIME = 1
 
-    return part
+-- Function to get all nearby players
+local function getNearbyPlayers()
+    local nearby = {}
+    for _, otherPlayer in pairs(Players:GetPlayers()) do
+        if otherPlayer ~= player and otherPlayer.Character then
+            local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if otherRoot then
+                local distance = (otherRoot.Position - root.Position).Magnitude
+                if distance <= DETECTION_RADIUS then
+                    table.insert(nearby, otherPlayer)
+                end
+            end
+        end
+    end
+    return nearby
 end
 
-local button = createButton()
+-- Function to generate a random teleport position
+local function getRandomPositionAround(center, radius)
+    local angle = math.rad(math.random(0, 360))
+    local offset = Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
+    return center + offset
+end
 
--- Function to create a fading black clone
-local function createGhostClone(character)
+-- Function to create and fade out a clone
+local function createClone()
     local clone = character:Clone()
     clone.Parent = workspace
 
-    -- Make the clone black and transparent
-    for _, obj in ipairs(clone:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            obj.Color = Color3.fromRGB(0, 0, 0) -- Black
-            obj.Transparency = 0.3 -- Semi-transparent
-            obj.CanCollide = false
-        elseif obj:IsA("Humanoid") then
-            obj.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+    -- Remove scripts inside the clone to prevent issues
+    for _, obj in pairs(clone:GetDescendants()) do
+        if obj:IsA("Script") or obj:IsA("LocalScript") then
+            obj:Destroy()
         end
     end
 
-    -- Fade the clone out
-    local fadeTween = TweenService:Create(
-        clone,
-        TweenInfo.new(1, Enum.EasingStyle.Linear), -- 1-second fade
-        {Transparency = 1}
-    )
-    fadeTween:Play()
-    
-    -- Destroy the clone after 1 second
-    task.delay(1, function()
-        clone:Destroy()
+    local cloneRoot = clone:FindFirstChild("HumanoidRootPart")
+    if cloneRoot then
+        cloneRoot.Anchored = true
+        cloneRoot.CFrame = root.CFrame
+    end
+
+    -- Fade out effect
+    local startTime = tick()
+    RunService.RenderStepped:Connect(function()
+        local elapsed = tick() - startTime
+        local alpha = math.clamp(elapsed / FADE_TIME, 0, 1)
+        
+        for _, part in pairs(clone:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Transparency = alpha
+            end
+        end
+
+        if alpha >= 1 then
+            clone:Destroy()
+        end
     end)
 end
 
--- Function to teleport the player
-local function teleportPlayer()
-    if not character then return end
-
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-
-    -- Save original position and create the clone
-    local originalPosition = rootPart.Position
-    createGhostClone(character)
-
-    -- Calculate new teleport position (randomly between -35 to 35 studs)
-    local randomDistance = math.random(-35, 35)
-    local newPosition = originalPosition + Vector3.new(randomDistance, 0, 0)
-
-    -- Teleport the player
-    rootPart.Position = newPosition
-end
-
--- Detect user touches on the button
-button.Touched:Connect(function(hit)
-    local playerTouched = Players:GetPlayerFromCharacter(hit.Parent)
-    if playerTouched and playerTouched == player then
-        teleportPlayer()
+-- Main loop to check for nearby players
+while true do
+    task.wait(0.2) -- Check every 0.2 seconds
+    if #getNearbyPlayers() > 0 then
+        createClone()
+        root.CFrame = CFrame.new(getRandomPositionAround(root.Position, TELEPORT_RADIUS))
     end
-end)
+end
