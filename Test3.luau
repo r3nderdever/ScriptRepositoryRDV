@@ -2,7 +2,6 @@ repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPla
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 
@@ -10,7 +9,8 @@ local plr = Players.LocalPlayer
 local Config = {
     AutoFruit = true,
     AutoStoreFruit = true,
-    FruitLog = {}
+    FruitLog = {},
+    NoFruitTime = 0 -- Timer to track how long no fruits are found
 }
 
 -- **🔵 Auto Join Marines**
@@ -24,67 +24,80 @@ local function JoinMarines()
 end
 task.spawn(JoinMarines)
 
--- **📜 Load & Save Fruit Log**
-local function LoadFruitLog()
-    if isfile("fruitlog.json") then
-        Config.FruitLog = HttpService:JSONDecode(readfile("fruitlog.json"))
-    end
-end
-
-local function SaveFruitLog()
-    writefile("fruitlog.json", HttpService:JSONEncode(Config.FruitLog))
-end
-
-local function LogFruit(fruitName)
-    table.insert(Config.FruitLog, {
-        fruit = fruitName,
-        time = os.date("%Y-%m-%d %H:%M:%S")
-    })
-    SaveFruitLog()
-end
-
 task.wait(1)
 
--- **🛠️ Auto Store Fruits**
-local function HandleAutoStore(tool)
-    if Config.AutoStoreFruit and tool:IsA("Tool") and tool.Name:find("Fruit") then
-        task.spawn(function()
-            if tool.Parent then -- Ensure tool exists before storing
-                pcall(function()
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", tool:GetAttribute("OriginalName"), tool)
-                end)
-            end
-        end)
-    end
-end
+-- **🍏 Detect & Teleport to Fruits**
+local function TeleportToNearestFruit()
+    while task.wait(0.12) do
+        if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then continue end
 
-task.spawn(function()
-    while task.wait(2) do
-        if Config.AutoStoreFruit then
-            pcall(function()
-                for _, fr in ipairs(plr.Backpack:GetChildren()) do
-                    HandleAutoStore(fr)
-                end
-                if plr.Character then
-                    for _, fr in ipairs(plr.Character:GetChildren()) do
-                        HandleAutoStore(fr)
+        local root = plr.Character.HumanoidRootPart
+        root.AssemblyLinearVelocity = Vector3.zero -- Prevents being pushed
+        root.CanCollide = false                    -- Ignores collision
+
+        local closestFruit = nil
+        local closestDistance = math.huge
+
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("Tool") and v.Name:lower():find("fruit") then
+                local fruitPos = v:FindFirstChild("Handle") and v.Handle.Position
+                if fruitPos then
+                    local distance = (root.Position - fruitPos).Magnitude
+                    if distance < closestDistance then
+                        closestDistance = distance
+                        closestFruit = v
                     end
                 end
-            end)
+            end
+        end
+
+        if closestFruit then
+            local fruitPos = closestFruit.Handle.Position
+            if closestDistance <= 50 then
+                root.CFrame = CFrame.new(fruitPos) -- Instantly teleports if within 50 studs
+            else
+                local direction = (fruitPos - root.Position).Unit
+                root.CFrame = root.CFrame + direction * 20 -- Moves 20 studs towards fruit
+            end
+            Config.NoFruitTime = 0 -- Reset timer since a fruit is found
+        else
+            Config.NoFruitTime += 0.12 -- Increase no-fruit timer
         end
     end
-end)
-
-plr.CharacterAdded:Connect(function(char)
-    char.ChildAdded:Connect(HandleAutoStore)
-end)
-
-if plr.Character then
-    plr.Character.ChildAdded:Connect(HandleAutoStore)
 end
 
--- **🍏 Detect Fruits**
-local function DetectFruits(fruitLabel, statusLabel)
+task.spawn(TeleportToNearestFruit)
+
+-- **🌍 UI Setup**
+local function CreateUI()
+    local screenGui = Instance.new("ScreenGui", plr:FindFirstChildOfClass("PlayerGui"))
+
+    local function CreateLabel(text, position)
+        local label = Instance.new("TextLabel")
+        label.Parent = screenGui
+        label.Size = UDim2.new(0, 260, 0, 50)
+        label.Position = position
+        label.BackgroundColor3 = Color3.new(0, 0, 0)
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.Text = text
+        label.Font = Enum.Font.SourceSansBold
+        label.TextSize = 20
+        label.BorderSizePixel = 3
+        label.BorderColor3 = Color3.fromRGB(255, 165, 0) -- Orange outline
+        return label
+    end
+
+    local fruitLabel = CreateLabel("🍏 Fruit Name: ???\n📍 Fruit Distance: ???", UDim2.new(0.5, -130, 0, 50))
+    local statusLabel = CreateLabel("🔍 Scanning for Fruits...", UDim2.new(0.5, -130, 0, 110))
+    local creditLabel = CreateLabel("Made by R3nderDV. On Discord!", UDim2.new(0.5, -130, 0, 170))
+
+    return fruitLabel, statusLabel
+end
+
+local fruitLabel, statusLabel = CreateUI()
+
+-- **🍏 Update Fruit Info in UI**
+local function UpdateFruitUI()
     while task.wait(1) do
         local closestFruit = nil
         local closestDistance = math.huge
@@ -93,7 +106,7 @@ local function DetectFruits(fruitLabel, statusLabel)
             if v:IsA("Tool") and v.Name:lower():find("fruit") then
                 local fruitPos = v:FindFirstChild("Handle") and v.Handle.Position
                 if fruitPos then
-                    local distance = (plr.Character.HumanoidRootPart.Position - fruitPos).magnitude
+                    local distance = (plr.Character.HumanoidRootPart.Position - fruitPos).Magnitude
                     if distance < closestDistance then
                         closestDistance = distance
                         closestFruit = v
@@ -105,15 +118,21 @@ local function DetectFruits(fruitLabel, statusLabel)
         if closestFruit then
             fruitLabel.Text = "🍏 Fruit Name: " .. closestFruit.Name .. "\n📍 Fruit Distance: " .. math.floor(closestDistance) .. "m"
             statusLabel.Text = "✅ Fruit Found!"
+            Config.NoFruitTime = 0 -- Reset no-fruit timer
         else
             fruitLabel.Text = "🍏 Fruit Name: ???\n📍 Fruit Distance: ???"
             statusLabel.Text = "🔍 Scanning for Fruits..."
+            Config.NoFruitTime += 1 -- Increase no-fruit timer every second
         end
     end
 end
 
--- **🌍 Advanced Server Hop System**
-local function ServerHop(statusLabel)
+task.spawn(UpdateFruitUI)
+
+-- **🌍 Server Hop System (Only if No Fruits Found)**
+local function ServerHop()
+    if Config.NoFruitTime < 60 then return end -- Only server hop if 60s passed with no fruit
+
     statusLabel.Text = "🌍 Server Hopping..."
     task.wait(2)
 
@@ -131,35 +150,20 @@ local function ServerHop(statusLabel)
     end
 end
 
--- **🚀 Run Everything**
-local function MainLoop()
-    local ScreenGui = Instance.new("ScreenGui", plr:FindFirstChildOfClass("PlayerGui"))
-    local fruitLabel = Instance.new("TextLabel")
-    local statusLabel = Instance.new("TextLabel")
+-- **🛠️ Check for Server Hop Every 5s**
+task.spawn(function()
+    while task.wait(5) do
+        ServerHop()
+    end
+end)
 
-    fruitLabel.Parent = ScreenGui
-    statusLabel.Parent = ScreenGui
-
-    fruitLabel.Size = UDim2.new(0, 250, 0, 50)
-    fruitLabel.Position = UDim2.new(0.5, -125, 0, 50)
-    fruitLabel.BackgroundColor3 = Color3.new(0, 0, 0)
-    fruitLabel.TextColor3 = Color3.new(1, 1, 1)
-    fruitLabel.Text = "🍏 Fruit Name: ???\n📍 Fruit Distance: ???"
-    
-    statusLabel.Size = UDim2.new(0, 250, 0, 50)
-    statusLabel.Position = UDim2.new(0.5, -125, 0, 100)
-    statusLabel.BackgroundColor3 = Color3.new(0, 0, 0)
-    statusLabel.TextColor3 = Color3.new(1, 1, 1)
-    statusLabel.Text = "🔍 Scanning for Fruits..."
-
-    task.spawn(function()
-        DetectFruits(fruitLabel, statusLabel)
-    end)
-
-    -- **Auto Server Hop After 60s**
-    task.delay(60, function()
-        ServerHop(statusLabel)
-    end)
-end
-
-task.spawn(MainLoop)
+-- **🚀 Prevent Physics Interference**
+task.spawn(function()
+    while task.wait() do
+        if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local root = plr.Character.HumanoidRootPart
+            root.AssemblyLinearVelocity = Vector3.zero -- Freezes movement from physics
+            root.CanCollide = false -- No pushback from objects
+        end
+    end
+end)
