@@ -1,148 +1,237 @@
---// Services
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-local Players = game:GetService("Players")
-local TeleportService = game:GetService("TeleportService")
-local HttpService = game:GetService("HttpService")
+--[[
+	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+]]
+repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer
 
---// Variables
+local Players, ReplicatedStorage, TweenService, HttpService, TeleportService = 
+    game:GetService("Players"), 
+    game:GetService("ReplicatedStorage"),
+    game:GetService("TweenService"),
+    game:GetService("HttpService"),
+    game:GetService("TeleportService")
+
 local plr = Players.LocalPlayer
-local webhookURL = "https://discord.com/api/webhooks/1332763994758316172/ya0sKT_D0t-iGSxH9pGyQOtYdIIa1Ekq1DrS3zbCN68MbFlw_fl1A64kRRYWCGcIZNV3"
+local Config = setmetatable({
+    AutoFruit = true,
+    AutoStoreFruit = true,
+    FruitLog = {}
+}, {
+    __index = _G,
+    __newindex = function(t, k, v)
+        _G[k] = v
+        rawset(t, k, v)
+    end
+})
 
-local serverHopDelay = 5 -- Delay before retrying if no different server is found
-local serverHopTimer = 4 -- Time until server hop when no fruit is found
-local teleportSpeed = 178 -- Studs per second
-local teleportInterval = 0.002 -- Seconds per step
-local instantTeleportRadius = 50 -- Studs
-local lastFruitTime = tick()
+local function JoinTeam()
+    if plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates then
+        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
+    end
+end
 
---// Send Webhook Notification
-local function SendWebhookNotification(fruitName)
-    local data = {
-        ["username"] = "Fruit Finder",
-        ["avatar_url"] = "https://static.wikia.nocookie.net/blox-fruits/images/d/d7/Game_Icon.png",
-        ["embeds"] = {{
-            ["title"] = "🍍 Fruit Found!",
-            ["description"] = "**A new fruit has been found!**",
-            ["color"] = 16755200, -- Orange color
-            ["fields"] = {
-                {["name"] = "📝 Fruit Name", ["value"] = "**" .. fruitName .. "**", ["inline"] = true},
-                {["name"] = "👤 Player", ["value"] = "**" .. plr.Name .. "**", ["inline"] = true},
-                {["name"] = "⏳ Time Found", ["value"] = "```" .. os.date("%Y-%m-%d %H:%M:%S") .. "```", ["inline"] = false}
-            }
-        }}
-    }
+JoinTeam()
 
-    local success, response = pcall(function()
-        HttpService:PostAsync(webhookURL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson, false)
-    end)
+-- Server Hop System (Replacing Old Server Hop Logic)
+local PlaceID = game.PlaceId
+local AllIDs = {}
+local foundAnything = ""
+local actualHour = os.date("!*t").hour
 
-    if success then
-        print("[✅] Webhook Sent: " .. fruitName)
+local File = pcall(function()
+    AllIDs = HttpService:JSONDecode(readfile("NotSameServers.json"))
+end)
+
+if not File then
+    table.insert(AllIDs, actualHour)
+    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+end
+
+local function TPReturner()
+    local Site
+    if foundAnything == "" then
+        Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
     else
-        warn("[❌] Webhook Failed!")
+        Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
     end
-end
 
---// Collect Fruit & Store Automatically
-local function CollectFruit(item)
-    if item:IsA("Tool") and item.Name:find("Fruit") then
-        local fruitName = item:GetAttribute("OriginalName") or item.Name
-        print("[🍍] Found Fruit: " .. fruitName)
-
-        -- Teleport to fruit
-        plr.Character.HumanoidRootPart.CFrame = item.Handle.CFrame
-        task.wait(1)
-
-        -- Store the fruit
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName, item)
-
-        -- Send Discord Webhook
-        SendWebhookNotification(fruitName)
+    if Site.nextPageCursor then
+        foundAnything = Site.nextPageCursor
     end
-end
 
---// Find Nearest Fruit
-local function GetNearestFruit()
-    local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return nil, math.huge end
+    for _, v in pairs(Site.data) do
+        local Possible = true
+        local ID = tostring(v.id)
 
-    local nearestFruit, nearestDistance = nil, math.huge
-    for _, fruit in ipairs(Workspace:GetChildren()) do
-        if fruit:IsA("Tool") and fruit.Name:find("Fruit") then
-            local distance = (hrp.Position - fruit.Handle.Position).Magnitude
-            if distance < nearestDistance then
-                nearestDistance = distance
-                nearestFruit = fruit
+        if tonumber(v.maxPlayers) > tonumber(v.playing) then
+            for _, Existing in pairs(AllIDs) do
+                if ID == tostring(Existing) then
+                    Possible = false
+                    break
+                end
             end
-        end
-    end
-    return nearestFruit, nearestDistance
-end
 
---// Move Towards Nearest Fruit
-local function MoveTowardsFruit()
-    while task.wait(teleportInterval) do
-        local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then continue end
-
-        local nearestFruit, distance = GetNearestFruit()
-        if nearestFruit then
-            lastFruitTime = tick()
-
-            if distance <= instantTeleportRadius then
-                hrp.CFrame = nearestFruit.Handle.CFrame -- Instant teleport
-                CollectFruit(nearestFruit)
-            else
-                local direction = (nearestFruit.Handle.Position - hrp.Position).unit
-                local stepSize = math.min(teleportSpeed * teleportInterval, distance)
-                hrp.CFrame = hrp.CFrame + direction * stepSize
-            end
-        else
-            if tick() - lastFruitTime >= serverHopTimer then
-                ServerHop()
+            if Possible then
+                table.insert(AllIDs, ID)
+                writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+                TeleportService:TeleportToPlaceInstance(PlaceID, ID, plr)
+                task.wait(4)
             end
         end
     end
 end
 
---// Random Server Hop System
-local function ServerHop()
-    local currentServerId = game.JobId
-    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100"))
-
-    if servers and servers.data then
-        for _, server in ipairs(servers.data) do
-            if server.id ~= currentServerId then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
-                return
+local function Teleport()
+    while task.wait() do
+        pcall(function()
+            TPReturner()
+            if foundAnything ~= "" then
+                TPReturner()
             end
+        end)
+    end
+end
+
+local function LoadFruitLog()
+    if isfile("fruitlog.json") then
+        Config.FruitLog = HttpService:JSONDecode(readfile("fruitlog.json"))
+    end
+end
+
+local function SaveFruitLog()
+    writefile("fruitlog.json", HttpService:JSONEncode(Config.FruitLog))
+end
+
+local function LogFruit(fruitName)
+    table.insert(Config.FruitLog, {
+        fruit = fruitName,
+        time = os.date("%Y-%m-%d %H:%M:%S")
+    })
+    SaveFruitLog()
+end
+
+task.wait(1)
+
+local function FindBasePart(model)
+    for _, v in ipairs(model:GetDescendants()) do
+        if v:IsA("BasePart") then return v end
+    end
+end
+
+local function CollectItem(item)
+    if not item then return false end
+    
+    if item:IsA("Tool") then
+        local handle = item:FindFirstChild("Handle")
+        if handle then
+            handle.CFrame = plr.Character.HumanoidRootPart.CFrame
+            if not item:IsDescendantOf(workspace) then
+                LogFruit(item.Name)
+                return true
+            end
+        end
+    elseif item:IsA("Model") and (item.Name == "Fruit" or item.Name == "fruit") then
+        local basePart = FindBasePart(item)
+        if basePart then
+            local startTime = tick()
+            repeat
+                if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    plr.Character.HumanoidRootPart.CFrame = CFrame.new(basePart.Position + Vector3.new(0, 3, 0))
+                end
+                task.wait()
+                if not item:IsDescendantOf(workspace) then
+                    LogFruit("Model Fruit")
+                    return true
+                end
+            until tick() - startTime > 10
+        end
+    end
+    return false
+end
+
+local function StartFruitFinder()
+    local lastServerHop = tick()
+    local collecting = false
+    
+    while task.wait() do
+        if Config.AutoFruit and not collecting then
+            pcall(function()
+                local foundFruit = false
+                local collected = false
+                
+                for _, v in ipairs(workspace:GetChildren()) do
+                    if v:IsA("Tool") and v.Name:find("fruit") then
+                        foundFruit = true
+                        collecting = true
+                        
+                        if CollectItem(v) then
+                            collected = true
+                        end
+                        
+                        collecting = false
+                        break
+                    end
+                end
+                
+                if not collected then
+                    for _, v in ipairs(workspace:GetChildren()) do
+                        if v:IsA("Model") and (v.Name == "Fruit" or v.Name == "fruit") then
+                            foundFruit = true
+                            collecting = true
+                            
+                            if CollectItem(v) then
+                                collected = true
+                            end
+                            
+                            collecting = false
+                            break
+                        end
+                    end
+                end
+                
+                -- If no fruit was found, hop servers
+                if not foundFruit and tick() - lastServerHop >= 3 then
+                    task.wait(1)
+                    lastServerHop = tick()
+                    Teleport() -- Calls the new Teleport function
+                end
+            end)
         end
     end
 end
 
---// Server Hop Timer
-local function CheckForServerHop()
-    if tick() - lastFruitTime >= serverHopTimer then
-        ServerHop()
-    end
-end
-
---// Start Fruit Collection & Server Hop System
-task.spawn(MoveTowardsFruit)
 task.spawn(function()
-    while task.wait(serverHopDelay) do
-        CheckForServerHop()
+    while task.wait() do
+        if Config.AutoStoreFruit then
+            pcall(function()
+                for _, fr in ipairs(plr.Backpack:GetChildren()) do
+                    if fr:IsA("Tool") and fr.Name:find("Fruit") then
+                        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fr:GetAttribute("OriginalName"), fr)
+                    end
+                end
+                for _, fr in ipairs(plr.Character:GetChildren()) do
+                    if fr:IsA("Tool") and fr.Name:find("Fruit") then
+                        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fr:GetAttribute("OriginalName"), fr)
+                    end
+                end
+            end)
+        end
     end
 end)
 
---// Detect Fruits in the Game
-task.spawn(function()
-    while task.wait(3) do
-        for _, v in ipairs(workspace:GetChildren()) do
-            if v:IsA("Tool") and v.Name:find("Fruit") then
-                CollectFruit(v)
-            end
+plr.CharacterAdded:Connect(function(char)
+    char.ChildAdded:Connect(function(child)
+        if child:IsA("Tool") and child.Name:find("Fruit") then
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", child:GetAttribute("OriginalName"), child)
         end
-    end
+    end)
 end)
+
+if plr.Character then
+    plr.Character.ChildAdded:Connect(function(child)
+        if child:IsA("Tool") and child.Name:find("Fruit") then
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", child:GetAttribute("OriginalName"), child)
+        end
+    end)
+end
+
+StartFruitFinder()
