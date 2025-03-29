@@ -6,72 +6,57 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 
 local plr = Players.LocalPlayer
-local Config = { NoFruitTime = 3, ServerHopActive = false }
+local Config = { NoFruitTime = 3 }
 
 -- **🔵 Auto Join Marines**
-local function JoinMarines()
+task.spawn(function()
     while plr.Team ~= game.Teams.Marines do
         ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
         task.wait(1)
     end
-end
-task.spawn(JoinMarines)
+end)
 
--- **✅ List of Valid Fruits**
+-- **✅ Valid Fruits List**
 local ValidFruits = {
-    ["Fruit "] = true, ["Rocket Fruit"] = true, ["Spin Fruit"] = true, ["Chop Fruit"] = true, ["Spring Fruit"] = true,
-    ["Bomb Fruit"] = true, ["Spike Fruit"] = true, ["Smoke Fruit"] = true, ["Blade Fruit"] = true, ["Sand Fruit"] = true,
-    ["Ice Fruit"] = true, ["Dark Fruit"] = true, ["Diamond Fruit"] = true, ["Light Fruit"] = true, ["Rubber Fruit"] = true,
-    ["Barrier Fruit"] = true, ["Magma Fruit"] = true, ["Phoenix Fruit"] = true, ["Love Fruit"] = true, ["Spider Fruit"] = true,
-    ["Sound Fruit"] = true, ["Buddha Fruit"] = true, ["Quake Fruit"] = true, ["Gravity Fruit"] = true, ["Control Fruit"] = true,
-    ["T-Rex Fruit"] = true, ["Mammoth Fruit"] = true, ["Spirit Fruit"] = true, ["Venom Fruit"] = true, ["Shadow Fruit"] = true,
-    ["Rumble Fruit"] = true, ["Portal Fruit"] = true, ["Blizzard Fruit"] = true, ["Dragon Fruit"] = true, ["Leopard Fruit"] = true,
-    ["Dough Fruit"] = true, ["Dragon (West) Fruit"] = true, ["Dragon (East) Fruit"] = true, ["Kitsune Fruit"] = true, ["Gas Fruit"] = true,
-    ["Yeti Fruit"] = true
+    ["Rocket Fruit"] = true, ["Spin Fruit"] = true, ["Chop Fruit"] = true, ["Spring Fruit"] = true,
+    ["Bomb Fruit"] = true, ["Spike Fruit"] = true, ["Smoke Fruit"] = true, ["Blade Fruit"] = true,
+    ["Sand Fruit"] = true, ["Ice Fruit"] = true, ["Dark Fruit"] = true, ["Diamond Fruit"] = true,
+    ["Light Fruit"] = true, ["Rubber Fruit"] = true, ["Barrier Fruit"] = true, ["Magma Fruit"] = true,
+    ["Phoenix Fruit"] = true, ["Love Fruit"] = true, ["Spider Fruit"] = true, ["Sound Fruit"] = true,
+    ["Buddha Fruit"] = true, ["Quake Fruit"] = true, ["Gravity Fruit"] = true, ["Control Fruit"] = true,
+    ["T-Rex Fruit"] = true, ["Mammoth Fruit"] = true, ["Spirit Fruit"] = true, ["Venom Fruit"] = true,
+    ["Shadow Fruit"] = true, ["Rumble Fruit"] = true, ["Portal Fruit"] = true, ["Blizzard Fruit"] = true,
+    ["Dragon Fruit"] = true, ["Leopard Fruit"] = true, ["Dough Fruit"] = true, ["Dragon (West) Fruit"] = true,
+    ["Dragon (East) Fruit"] = true, ["Kitsune Fruit"] = true, ["Gas Fruit"] = true, ["Yeti Fruit"] = true
 }
 
--- **📜 UI Setup**
+-- **📜 UI Setup (Minimalist Design)**
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local UIFrame = Instance.new("Frame", ScreenGui)
-local FruitLabel = Instance.new("TextLabel", UIFrame)
-local DistanceLabel = Instance.new("TextLabel", UIFrame)
-local TimerLabel = Instance.new("TextLabel", UIFrame)
+local UILabel = Instance.new("TextLabel", UIFrame)
 local UICorner = Instance.new("UICorner", UIFrame)
 
 ScreenGui.ResetOnSpawn = false
-UIFrame.Size = UDim2.new(0, 280, 0, 90)
-UIFrame.Position = UDim2.new(0.5, -140, 0.1, 0)
-UIFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+UIFrame.Size = UDim2.new(0, 260, 0, 60)
+UIFrame.Position = UDim2.new(0.5, -130, 0.1, 0)
+UIFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 UIFrame.BorderSizePixel = 2
 UIFrame.BorderColor3 = Color3.fromRGB(255, 140, 0)
 UICorner.CornerRadius = UDim.new(0, 10)
 
-local function CreateTextLabel(parent, yOffset, fontSize)
-    local label = Instance.new("TextLabel", parent)
-    label.Size = UDim2.new(1, -10, 0, fontSize)
-    label.Position = UDim2.new(0, 5, 0, yOffset)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.Font = Enum.Font.Cartoon
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.TextScaled = false
-    label.TextSize = fontSize
-    return label
-end
-
-FruitLabel = CreateTextLabel(UIFrame, 5, 20)
-DistanceLabel = CreateTextLabel(UIFrame, 30, 20)
-TimerLabel = CreateTextLabel(UIFrame, 55, 20)
-
-FruitLabel.Text = "🍏 Fruit Name: ???"
-DistanceLabel.Text = "📍 Fruit Distance: ???"
-TimerLabel.Text = "⏳ Server Hop In: 3s"
+UILabel.Size = UDim2.new(1, -10, 1, -10)
+UILabel.Position = UDim2.new(0, 5, 0, 5)
+UILabel.BackgroundTransparency = 1
+UILabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+UILabel.Font = Enum.Font.Cartoon
+UILabel.TextXAlignment = Enum.TextXAlignment.Left
+UILabel.TextScaled = true
+UILabel.Text = "🍏 Fruit: ??? | 📍 Distance: ??? | ⏳ Hop: 3s"
 
 -- **🍏 Detect & Teleport to Fruits**
-local function TeleportToNearestFruit()
-    while task.wait(0.06) do
+task.spawn(function()
+    while task.wait(0.03) do
         if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then continue end
-
         local root = plr.Character.HumanoidRootPart
         root.AssemblyLinearVelocity = Vector3.zero
         root.CanCollide = false
@@ -93,58 +78,57 @@ local function TeleportToNearestFruit()
 
         if closestFruit then
             local fruitPos = closestFruit.Handle.Position
-            if closestDistance <= 50 then
+            if closestDistance <= 40 then
                 root.CFrame = CFrame.new(fruitPos)
             else
                 local direction = (fruitPos - root.Position).Unit
-                root.CFrame = root.CFrame + direction * 8
+                root.CFrame = root.CFrame + direction * 15
             end
             Config.NoFruitTime = 3
-            FruitLabel.Text = "🍏 Fruit Name: " .. closestFruit.Name
-            DistanceLabel.Text = "📍 Fruit Distance: " .. math.floor(closestDistance) .. "m"
+            UILabel.Text = "🍏 Fruit: " .. closestFruit.Name .. " | 📍 Distance: " .. math.floor(closestDistance) .. "m | ⏳ Hop: 3s"
         else
-            Config.NoFruitTime = math.max(0, Config.NoFruitTime - 0.06)
-            TimerLabel.Text = "⏳ Server Hop In: " .. string.format("%.1f", Config.NoFruitTime) .. "s"
+            Config.NoFruitTime = math.max(0, Config.NoFruitTime - 0.03)
+            UILabel.Text = "🍏 Fruit: ??? | 📍 Distance: ??? | ⏳ Hop: " .. string.format("%.1f", Config.NoFruitTime) .. "s"
         end
     end
+end)
+
+-- **🌍 Smarter Server Hop (Avoids Rejoining)**
+local PlaceID = game.PlaceId
+local AllIDs, foundAnything = {}, ""
+local actualHour = os.date("!*t").hour
+pcall(function()
+    AllIDs = HttpService:JSONDecode(readfile("NotSameServers.json"))
+end)
+if not AllIDs or type(AllIDs) ~= "table" then
+    AllIDs = {actualHour}
+    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
 end
 
-task.spawn(TeleportToNearestFruit)
+local function TPReturner()
+    local Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100' .. (foundAnything ~= "" and "&cursor=" .. foundAnything or "")))
+    if Site.nextPageCursor then foundAnything = Site.nextPageCursor end
 
--- **🌍 HTTP-Based Server Hop**
-local function ServerHop()
-    if Config.ServerHopActive then return end
-    Config.ServerHopActive = true
-
-    while task.wait(0.2) do
-        if Config.NoFruitTime > 0 then
-            Config.ServerHopActive = false
-            break
-        end
-
-        local success, servers = pcall(function()
-            return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-        end)
-
-        if success and servers and servers.data and #servers.data > 0 then
-            for _, server in ipairs(servers.data) do
-                if server.playing >= 3 and server.id ~= game.JobId then
-                    TimerLabel.Text = "🌍 Server Hopping..."
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
-                    return
-                end
-            end
+    for _, v in ipairs(Site.data) do
+        local ID = tostring(v.id)
+        if v.playing >= 3 and v.playing < v.maxPlayers and not table.find(AllIDs, ID) then
+            table.insert(AllIDs, ID)
+            writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+            TeleportService:TeleportToPlaceInstance(PlaceID, ID, plr)
+            task.wait(4)
         end
     end
 end
 
 task.spawn(function()
-    while task.wait(0.5) do
-        ServerHop()
+    while task.wait(0.2) do
+        if Config.NoFruitTime <= 0 then
+            TPReturner()
+        end
     end
 end)
 
--- **🛠️ Auto Store Fruits (Constant Check)**
+-- **🛠️ Auto Store Fruits**
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
