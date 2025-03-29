@@ -93,44 +93,61 @@ local function CollectFruits()
     end
 end
 
---// Multiple Server Hop Systems
+--// Ultimate Server Hop System (Never Rejoins Same Server)
 local function ServerHop()
     task.spawn(function()
-        while true do
-            task.wait(serverHopDelay)
+        local PlaceID = game.PlaceId
+        local AllIDs = {}
+        local foundAnything = ""
+        local actualHour = os.date("!*t").hour
+        local File = pcall(function()
+            AllIDs = HttpService:JSONDecode(readfile("NotSameServers.json"))
+        end)
+        if not File then
+            table.insert(AllIDs, actualHour)
+            writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+        end
 
-            -- Fetch public servers
-            local success, servers = pcall(function()
-                return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100"))
-            end)
+        function TPReturner()
+            local Site
+            if foundAnything == "" then
+                Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
+            else
+                Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
+            end
+            for _, v in pairs(Site.data) do
+                local ID = tostring(v.id)
+                local Possible = true
 
-            if success and servers and servers.data then
-                local validServers = {}
-
-                for _, server in ipairs(servers.data) do
-                    if server.playing >= 5 and server.playing <= 11 and server.id ~= game.JobId then
-                        table.insert(validServers, server.id)
+                if v.playing >= 5 and v.playing <= 11 then
+                    for _, Existing in pairs(AllIDs) do
+                        if ID == tostring(Existing) then
+                            Possible = false
+                        end
+                    end
+                    if Possible then
+                        table.insert(AllIDs, ID)
+                        writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+                        TeleportService:TeleportToPlaceInstance(PlaceID, ID, plr)
+                        return
                     end
                 end
-
-                -- If valid servers found, teleport to a random one
-                if #validServers > 0 then
-                    local randomServer = validServers[math.random(1, #validServers)]
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, randomServer)
-                    return
-                end
             end
+        end
 
-            -- Alternative method (force different server)
-            task.wait(1)
+        -- Retry until a new server is found
+        while task.wait(0.3) do
             pcall(function()
-                TeleportService:Teleport(game.PlaceId)
+                TPReturner()
+                if foundAnything ~= "" then
+                    TPReturner()
+                end
             end)
         end
     end)
 end
 
---// Timer to check for fruit & server hop
+--// Timer to check for fruit & trigger server hop
 task.spawn(function()
     while task.wait(0.3) do
         pcall(function()
