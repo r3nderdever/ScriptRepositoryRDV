@@ -108,74 +108,43 @@ local function GetNearestFruit()
     return nearestFruit, nearestDistance
 end
 
--- Noclip function
-local function EnableNoclip()
-    for _, part in ipairs(plr.Character:GetChildren()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = false
-        end
-    end
-end
-
-local function DisableNoclip()
-    for _, part in ipairs(plr.Character:GetChildren()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = true
-        end
-    end
-end
-
--- Move Towards Nearest Fruit
-local function MoveTowardsFruit()
-    while task.wait(0.03) do
-        if plr.Team == game.Teams.Marines then
-            fruitLabel.Text = "Fruit Finder Active"
-            local nearestFruit, distance = GetNearestFruit()
-            if nearestFruit and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                local hrp = plr.Character.HumanoidRootPart
-                if distance <= 50 then
-                    hrp.CFrame = CFrame.new(nearestFruit.Handle.Position)
-                else
-                    local direction = (nearestFruit.Handle.Position - hrp.Position).unit
-                    hrp.CFrame = CFrame.new(hrp.Position + direction * 5)
-                end
-                
-                if distance > 20 then
-                    EnableNoclip()
-                else
-                    DisableNoclip()
-                end
-                
-                local waterBase = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("WaterBase-Plane")
-                if waterBase and (hrp.Position - waterBase.Position).Magnitude <= 5 then
-                    hrp.CFrame = hrp.CFrame + Vector3.new(0, 30, 0)
-                end
-                
-                fruitLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
-            else
-                task.wait(1)
-                if not GetNearestFruit() then
-                    local success, response = pcall(function()
-                        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-                        local server = servers.data[math.random(1, #servers.data)]
-                        if server then TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id) end
-                    end)
-                    if not success then warn("Server hop failed: " .. response) end
+-- Server Hop Function with Fix
+local function ServerHop()
+    while true do
+        local success, response = pcall(function()
+            local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+            local validServers = {}
+            
+            for _, server in ipairs(servers.data) do
+                if server.playing > 0 and server.id ~= game.JobId then
+                    table.insert(validServers, server.id)
                 end
             end
+
+            if #validServers > 0 then
+                local selectedServer = validServers[math.random(1, #validServers)]
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, selectedServer)
+            else
+                warn("No valid servers found. Retrying...")
+            end
+        end)
+
+        if success then
+            return
         else
-            fruitLabel.Text = "Fruit Finder Inactive"
+            warn("Server hop failed: " .. tostring(response))
+            task.wait(1)
         end
     end
 end
-
--- On Respawn
-plr.CharacterAdded:Connect(function()
-    task.wait(1)
-    task.spawn(MoveTowardsFruit)
-end)
 
 -- Start Processes
 task.spawn(CheckAndJoinTeam)
 task.spawn(AutoStoreLoop)
-task.spawn(MoveTowardsFruit)
+task.spawn(function()
+    while task.wait(1) do
+        if not GetNearestFruit() then
+            ServerHop()
+        end
+    end
+end)
