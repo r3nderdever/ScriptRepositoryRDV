@@ -108,50 +108,20 @@ local function GetNearestFruit()
     return nearestFruit, nearestDistance
 end
 
--- Server Hop Function with Fix
-local function ServerHop()
-    while true do
-        local success, response = pcall(function()
-            local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-            local validServers = {}
-            
-            for _, server in ipairs(servers.data) do
-                if server.playing > 0 and server.id ~= game.JobId then
-                    table.insert(validServers, server.id)
-                end
-            end
-
-            if #validServers > 0 then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, validServers[math.random(1, #validServers)])
-            else
-                warn("No valid servers found. Retrying...")
-            end
-        end)
-
-        if success then
-            return
-        else
-            warn("Server hop failed: " .. tostring(response))
-            task.wait(1)
-        end
-    end
-end
-
--- Enable Collision with Water Parts
-local function EnableWaterCollision()
-    while task.wait(0.5) do
-        for _, part in ipairs(Workspace:GetDescendants()) do
-            if part:IsA("BasePart") and string.lower(part.Name):find("water") then
-                part.CanCollide = true
-            end
-        end
+-- Update UI
+local function UpdateUI(fruit, distance, timeLeft)
+    if fruit then
+        fruitLabel.Text = "Fruit: " .. fruit.Name .. " | Distance: " .. math.floor(distance) .. " | Server hop in: " .. string.format("%.1f", timeLeft) .. "s"
+    else
+        fruitLabel.Text = "No fruit found | Server hop in: " .. string.format("%.1f", timeLeft) .. "s"
     end
 end
 
 -- Start Processes
 task.spawn(CheckAndJoinTeam)
 task.spawn(AutoStoreLoop)
-task.spawn(EnableWaterCollision)
+
+local timeLeft = 3
 task.spawn(function()
     task.wait(5) -- Forcefully activate fruit finder after 5 seconds
     while task.wait(0.024) do
@@ -163,8 +133,13 @@ task.spawn(function()
             else
                 plr.Character.HumanoidRootPart.CFrame = fruit.Handle.CFrame
             end
+            timeLeft = 3
         else
-            ServerHop()
+            timeLeft = timeLeft - 0.024
+            if timeLeft <= 0 then
+                ServerHop()
+            end
         end
+        UpdateUI(fruit, distance, timeLeft)
     end
 end)
