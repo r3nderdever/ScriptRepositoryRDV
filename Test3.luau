@@ -3,6 +3,7 @@
 ]]
 
 repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer
+task.wait(2) -- Waits 2 seconds after loading
 
 local Players, ReplicatedStorage, TweenService, HttpService, TeleportService = 
     game:GetService("Players"), 
@@ -12,6 +13,18 @@ local Players, ReplicatedStorage, TweenService, HttpService, TeleportService =
     game:GetService("TeleportService")
 
 local plr = Players.LocalPlayer
+
+-- Auto-Join Marines Team
+local function JoinMarines()
+    for _, team in ipairs(game.Teams:GetChildren()) do
+        if team.Name == "Marines" then
+            plr.Team = team
+            break
+        end
+    end
+end
+JoinMarines()
+
 local Config = {
     AutoFruit = true,
     AutoStoreFruit = true,
@@ -78,65 +91,62 @@ local function CollectItem(item)
     return false
 end
 
--- Function to create UI
-local function CreateUI()
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "FruitFinderUI"
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.Parent = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
+-- UI Setup
+local ScreenGui = Instance.new("ScreenGui", plr:FindFirstChildOfClass("PlayerGui"))
+ScreenGui.Name = "FruitFinderUI"
+ScreenGui.ResetOnSpawn = false
 
-    local Frame = Instance.new("Frame", ScreenGui)
-    Frame.Size = UDim2.new(0, 300, 0, 150)
-    Frame.Position = UDim2.new(0.5, -150, 0.1, 0)
-    Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    Frame.Active = true
-    Frame.Draggable = true
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 300, 0, 150)
+Frame.Position = UDim2.new(0.5, -150, 0.1, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.Active = true
+Frame.Draggable = true
 
-    local Title = Instance.new("TextLabel", Frame)
-    Title.Size = UDim2.new(1, 0, 0, 30)
-    Title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    Title.Text = "Fruit Finder"
-    Title.TextSize = 18
-    Title.Font = Enum.Font.GothamBold
-    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+local FruitLabel = Instance.new("TextLabel", Frame)
+FruitLabel.Size = UDim2.new(1, 0, 0, 30)
+FruitLabel.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+FruitLabel.Text = "No Fruit Found"
+FruitLabel.TextSize = 18
+FruitLabel.Font = Enum.Font.GothamBold
+FruitLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 
-    local ToggleButton = Instance.new("TextButton", Frame)
-    ToggleButton.Size = UDim2.new(1, 0, 0, 30)
-    ToggleButton.Position = UDim2.new(0, 0, 0, 35)
-    ToggleButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    ToggleButton.Text = "Auto Collect: ON"
-    ToggleButton.Font = Enum.Font.Gotham
-    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+local ToggleButton = Instance.new("TextButton", Frame)
+ToggleButton.Size = UDim2.new(1, 0, 0, 30)
+ToggleButton.Position = UDim2.new(0, 0, 0, 35)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+ToggleButton.Text = "Auto Collect: ON"
+ToggleButton.Font = Enum.Font.Gotham
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 
-    local ServerHopButton = Instance.new("TextButton", Frame)
-    ServerHopButton.Size = UDim2.new(1, 0, 0, 30)
-    ServerHopButton.Position = UDim2.new(0, 0, 0, 70)
-    ServerHopButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    ServerHopButton.Text = "Hop Server"
-    ServerHopButton.Font = Enum.Font.Gotham
-    ServerHopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+local ServerHopButton = Instance.new("TextButton", Frame)
+ServerHopButton.Size = UDim2.new(1, 0, 0, 30)
+ServerHopButton.Position = UDim2.new(0, 0, 0, 70)
+ServerHopButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+ServerHopButton.Text = "Hop Server"
+ServerHopButton.Font = Enum.Font.Gotham
+ServerHopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 
-    local CloseButton = Instance.new("TextButton", Frame)
-    CloseButton.Size = UDim2.new(1, 0, 0, 30)
-    CloseButton.Position = UDim2.new(0, 0, 0, 110)
-    CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    CloseButton.Text = "Close"
-    CloseButton.Font = Enum.Font.GothamBold
-    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+local CloseButton = Instance.new("TextButton", Frame)
+CloseButton.Size = UDim2.new(1, 0, 0, 30)
+CloseButton.Position = UDim2.new(0, 0, 0, 110)
+CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+CloseButton.Text = "Close"
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 
-    ToggleButton.MouseButton1Click:Connect(function()
-        Config.AutoFruit = not Config.AutoFruit
-        ToggleButton.Text = Config.AutoFruit and "Auto Collect: ON" or "Auto Collect: OFF"
-    end)
+ToggleButton.MouseButton1Click:Connect(function()
+    Config.AutoFruit = not Config.AutoFruit
+    ToggleButton.Text = Config.AutoFruit and "Auto Collect: ON" or "Auto Collect: OFF"
+end)
 
-    ServerHopButton.MouseButton1Click:Connect(function()
-        Teleport()
-    end)
+ServerHopButton.MouseButton1Click:Connect(function()
+    Teleport()
+end)
 
-    CloseButton.MouseButton1Click:Connect(function()
-        ScreenGui:Destroy()
-    end)
-end
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
 
 -- Server Hop Function
 local PlaceID = game.PlaceId
@@ -169,22 +179,27 @@ function Teleport()
     end
 end
 
--- Start fruit finder
+-- Update UI with Fruit Name & Distance
 task.spawn(function()
     while task.wait() do
-        if Config.AutoFruit then
-            pcall(function()
-                for _, v in ipairs(workspace:GetChildren()) do
-                    if v:IsA("Tool") and v.Name:find("fruit") then
-                        CollectItem(v)
-                    elseif v:IsA("Model") and (v.Name == "Fruit" or v.Name == "fruit") then
-                        CollectItem(v)
+        local nearestFruit, nearestDist = nil, math.huge
+        for _, v in ipairs(workspace:GetChildren()) do
+            if (v:IsA("Tool") or v:IsA("Model")) and v.Name:find("fruit") then
+                local basePart = FindBasePart(v)
+                if basePart then
+                    local dist = (plr.Character.HumanoidRootPart.Position - basePart.Position).Magnitude
+                    if dist < nearestDist then
+                        nearestFruit, nearestDist = v, dist
                     end
                 end
-            end)
+            end
+        end
+        if nearestFruit then
+            FruitLabel.Text = nearestFruit.Name .. " | " .. math.floor(nearestDist) .. " studs away"
+        else
+            FruitLabel.Text = "No Fruit Found"
         end
     end
 end)
 
--- Start UI
-CreateUI()
+print("Fruit Finder Script Loaded ✅")
