@@ -7,12 +7,13 @@ local HttpService = game:GetService("HttpService")
 
 --// Variables
 local plr = Players.LocalPlayer
-local serverHopDelay = 5 -- Time between server hop retries (seconds)
-local serverHopTimer = 4 -- Time till server hop when no fruit is found
+local serverHopDelay = 5 -- Delay between server hop retries (seconds)
+local serverHopTimer = 4 -- Time until server hop when no fruit is found
 local teleportSpeed = 150 -- studs per second
 local teleportInterval = 0.002 -- seconds per step
 local instantTeleportRadius = 50 -- studs
 local lastFruitTime = tick()
+local running = true
 
 local fruitsList = {
     "Fruit", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
@@ -25,17 +26,23 @@ local fruitsList = {
 }
 
 --// UI Setup
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = plr:FindFirstChild("PlayerGui") or plr:WaitForChild("PlayerGui")
+local function CreateUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Parent = plr:FindFirstChild("PlayerGui") or plr:WaitForChild("PlayerGui")
 
-local infoLabel = Instance.new("TextLabel", screenGui)
-infoLabel.Size = UDim2.new(0.5, 0, 0.05, 0)
-infoLabel.Position = UDim2.new(0.25, 0, 0.9, 0)
-infoLabel.BackgroundTransparency = 0.5
-infoLabel.BackgroundColor3 = Color3.new(0, 0, 0)
-infoLabel.TextColor3 = Color3.new(1, 1, 1)
-infoLabel.TextScaled = true
-infoLabel.Text = "Searching for fruit..."
+    local infoLabel = Instance.new("TextLabel", screenGui)
+    infoLabel.Size = UDim2.new(0.5, 0, 0.05, 0)
+    infoLabel.Position = UDim2.new(0.25, 0, 0.9, 0)
+    infoLabel.BackgroundTransparency = 0.5
+    infoLabel.BackgroundColor3 = Color3.new(0, 0, 0)
+    infoLabel.TextColor3 = Color3.new(1, 1, 1)
+    infoLabel.TextScaled = true
+    infoLabel.Text = "Searching for fruit..."
+    
+    return infoLabel
+end
+
+local infoLabel = CreateUI()
 
 --// Function to Join Marines Team
 local function JoinTeam()
@@ -70,7 +77,7 @@ end
 
 --// Move Towards Nearest Fruit
 local function MoveTowardsFruit()
-    while task.wait(teleportInterval) do
+    while running and task.wait(teleportInterval) do
         local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
         if not hrp then continue end
 
@@ -84,7 +91,7 @@ local function MoveTowardsFruit()
             else
                 local direction = (nearestFruit.Handle.Position - hrp.Position).unit
                 local stepSize = math.min(teleportSpeed * teleportInterval, distance)
-                hrp.CFrame = CFrame.new(hrp.Position + direction * stepSize)
+                hrp.CFrame = hrp.CFrame + direction * stepSize
             end
         else
             local timeSinceLastFruit = tick() - lastFruitTime
@@ -98,7 +105,7 @@ end
 
 --// Server Hop Function (Infinite Retries with Delay)
 local function ServerHop()
-    while true do
+    while running do
         local success, response = pcall(function()
             local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
             return HttpService:JSONDecode(game:HttpGet(url))
@@ -130,11 +137,20 @@ local function ServerHop()
 end
 
 --// Start Processes
-JoinTeam()
-task.spawn(MoveTowardsFruit)
+task.spawn(function()
+    JoinTeam()
+    MoveTowardsFruit()
+end)
 
 plr.CharacterAdded:Connect(function()
     task.wait(1)
     JoinTeam()
     task.spawn(MoveTowardsFruit)
+end)
+
+-- Auto-recovery for script crashes
+Players.PlayerRemoving:Connect(function(leavingPlayer)
+    if leavingPlayer == plr then
+        running = false -- Stop all loops if player leaves
+    end
 end)
