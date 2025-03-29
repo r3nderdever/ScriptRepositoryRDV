@@ -17,13 +17,6 @@ task.spawn(function()
     end
 end)
 
--- **🔍 Load Visited Servers**
-pcall(function()
-    if isfile("VisitedServers.json") then
-        VisitedServers = HttpService:JSONDecode(readfile("VisitedServers.json"))
-    end
-end)
-
 -- **🍏 UI Setup**
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local UIFrame = Instance.new("Frame", ScreenGui)
@@ -85,57 +78,83 @@ task.spawn(function()
     end
 end)
 
--- **🌍 Server Hop System (Ensures Different Server)**
-local function FindAndJoinDifferentServer()
-    local PlaceID = game.PlaceId
-    local Servers, FoundValidServer = nil, false
+-- **🌍 Server Hop System**
+local PlaceID = game.PlaceId
+local AllIDs = {}
+local foundAnything = ""
+local actualHour = os.date("!*t").hour
 
-    local function GetServers()
-        local success, response = pcall(function()
-            return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"))
-        end)
-        return success and response and response.data or nil
+local File = pcall(function()
+    AllIDs = HttpService:JSONDecode(readfile("NotSameServers.json"))
+end)
+if not File then
+    table.insert(AllIDs, actualHour)
+    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+end
+
+local function TPReturner()
+    local Site
+    if foundAnything == "" then
+        Site = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"))
+    else
+        Site = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100&cursor=" .. foundAnything))
     end
 
-    -- Try finding a new server
-    for _ = 1, 5 do -- Try multiple times in case of failure
-        Servers = GetServers()
-        if not Servers then
-            task.wait(1)
-            continue
-        end
+    local ID = ""
+    if Site.nextPageCursor and Site.nextPageCursor ~= "null" and Site.nextPageCursor ~= nil then
+        foundAnything = Site.nextPageCursor
+    end
 
-        local ValidServers = {}
-        for _, server in ipairs(Servers) do
-            if server.playing >= 3 and server.playing < server.maxPlayers and not VisitedServers[server.id] then
-                table.insert(ValidServers, server.id)
+    local num = 0
+    for _, v in pairs(Site.data) do
+        local Possible = true
+        ID = tostring(v.id)
+        if tonumber(v.maxPlayers) > tonumber(v.playing) then
+            for _, Existing in pairs(AllIDs) do
+                if num ~= 0 then
+                    if ID == tostring(Existing) then
+                        Possible = false
+                    end
+                else
+                    if tonumber(actualHour) ~= tonumber(Existing) then
+                        local delFile = pcall(function()
+                            delfile("NotSameServers.json")
+                            AllIDs = {}
+                            table.insert(AllIDs, actualHour)
+                        end)
+                    end
+                end
+                num = num + 1
+            end
+            if Possible then
+                table.insert(AllIDs, ID)
+                pcall(function()
+                    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+                    task.wait()
+                    TeleportService:TeleportToPlaceInstance(PlaceID, ID, plr)
+                end)
+                task.wait(4)
             end
         end
-
-        if #ValidServers > 0 then
-            local SelectedServer = ValidServers[math.random(1, #ValidServers)]
-            VisitedServers[SelectedServer] = true
-            writefile("VisitedServers.json", HttpService:JSONEncode(VisitedServers))
-
-            TeleportService:TeleportToPlaceInstance(PlaceID, SelectedServer, plr)
-            FoundValidServer = true
-            break
-        end
     end
+end
 
-    -- If no valid servers, retry later
-    if not FoundValidServer then
-        warn("⚠️ No completely new servers found. Retrying in 5 seconds...")
-        task.wait(5)
-        FindAndJoinDifferentServer()
+local function Teleport()
+    while task.wait() do
+        pcall(function()
+            TPReturner()
+            if foundAnything ~= "" then
+                TPReturner()
+            end
+        end)
     end
 end
 
 -- **🔄 Constantly Check for Server Hop**
 task.spawn(function()
-    while task.wait(0.2) do
+    while task.wait(0.5) do
         if Config.NoFruitTime <= 0 then
-            FindAndJoinDifferentServer()
+            Teleport()
         end
     end
 end)
