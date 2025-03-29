@@ -8,14 +8,6 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
-local function JoinTeam()
-    if plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates then
-        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
-    end
-end
-
-JoinTeam()
-
 -- UI Setup
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
