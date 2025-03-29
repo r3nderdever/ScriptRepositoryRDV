@@ -3,7 +3,11 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
--- Join Marines Team
+-- Player
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+then
 local function JoinTeam()
     if plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates then
         ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
@@ -11,11 +15,6 @@ local function JoinTeam()
 end
 
 JoinTeam()
-
--- Player
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
 -- UI Setup
 local screenGui = Instance.new("ScreenGui")
