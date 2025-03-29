@@ -1,6 +1,7 @@
 --[[
-	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
+    WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
 ]]
+
 repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer
 
 local Players, ReplicatedStorage, TweenService, HttpService, TeleportService = 
@@ -11,96 +12,25 @@ local Players, ReplicatedStorage, TweenService, HttpService, TeleportService =
     game:GetService("TeleportService")
 
 local plr = Players.LocalPlayer
-local Config = setmetatable({
+local Config = {
     AutoFruit = true,
     AutoStoreFruit = true,
     FruitLog = {}
-}, {
-    __index = _G,
-    __newindex = function(t, k, v)
-        _G[k] = v
-        rawset(t, k, v)
-    end
-})
+}
 
-local function JoinTeam()
-    if plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates then
-        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
-    end
-end
-
-JoinTeam()
-
--- Server Hop System (Replacing Old Server Hop Logic)
-local PlaceID = game.PlaceId
-local AllIDs = {}
-local foundAnything = ""
-local actualHour = os.date("!*t").hour
-
-local File = pcall(function()
-    AllIDs = HttpService:JSONDecode(readfile("NotSameServers.json"))
-end)
-
-if not File then
-    table.insert(AllIDs, actualHour)
-    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
-end
-
-local function TPReturner()
-    local Site
-    if foundAnything == "" then
-        Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
-    else
-        Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
-    end
-
-    if Site.nextPageCursor then
-        foundAnything = Site.nextPageCursor
-    end
-
-    for _, v in pairs(Site.data) do
-        local Possible = true
-        local ID = tostring(v.id)
-
-        if tonumber(v.maxPlayers) > tonumber(v.playing) then
-            for _, Existing in pairs(AllIDs) do
-                if ID == tostring(Existing) then
-                    Possible = false
-                    break
-                end
-            end
-
-            if Possible then
-                table.insert(AllIDs, ID)
-                writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
-                TeleportService:TeleportToPlaceInstance(PlaceID, ID, plr)
-                task.wait(4)
-            end
-        end
-    end
-end
-
-local function Teleport()
-    while task.wait() do
-        pcall(function()
-            TPReturner()
-            if foundAnything ~= "" then
-                TPReturner()
-            end
-        end)
-    end
-end
-
+-- Function to load stored fruit log
 local function LoadFruitLog()
     if isfile("fruitlog.json") then
         Config.FruitLog = HttpService:JSONDecode(readfile("fruitlog.json"))
     end
 end
 
+-- Function to save fruit log
 local function SaveFruitLog()
     writefile("fruitlog.json", HttpService:JSONEncode(Config.FruitLog))
 end
 
+-- Function to log collected fruits
 local function LogFruit(fruitName)
     table.insert(Config.FruitLog, {
         fruit = fruitName,
@@ -109,17 +39,17 @@ local function LogFruit(fruitName)
     SaveFruitLog()
 end
 
-task.wait(1)
-
+-- Function to find a base part inside a model
 local function FindBasePart(model)
     for _, v in ipairs(model:GetDescendants()) do
         if v:IsA("BasePart") then return v end
     end
 end
 
+-- Function to collect fruit
 local function CollectItem(item)
     if not item then return false end
-    
+
     if item:IsA("Tool") then
         local handle = item:FindFirstChild("Handle")
         if handle then
@@ -148,69 +78,107 @@ local function CollectItem(item)
     return false
 end
 
-local function StartFruitFinder()
-    local lastServerHop = tick()
-    local collecting = false
-    
-    while task.wait() do
-        if Config.AutoFruit and not collecting then
-            pcall(function()
-                local foundFruit = false
-                local collected = false
-                
-                for _, v in ipairs(workspace:GetChildren()) do
-                    if v:IsA("Tool") and v.Name:find("fruit") then
-                        foundFruit = true
-                        collecting = true
-                        
-                        if CollectItem(v) then
-                            collected = true
-                        end
-                        
-                        collecting = false
-                        break
-                    end
-                end
-                
-                if not collected then
-                    for _, v in ipairs(workspace:GetChildren()) do
-                        if v:IsA("Model") and (v.Name == "Fruit" or v.Name == "fruit") then
-                            foundFruit = true
-                            collecting = true
-                            
-                            if CollectItem(v) then
-                                collected = true
-                            end
-                            
-                            collecting = false
-                            break
-                        end
-                    end
-                end
-                
-                -- If no fruit was found, hop servers
-                if not foundFruit and tick() - lastServerHop >= 3 then
-                    task.wait(1)
-                    lastServerHop = tick()
-                    Teleport() -- Calls the new Teleport function
-                end
-            end)
+-- Function to create UI
+local function CreateUI()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "FruitFinderUI"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
+
+    local Frame = Instance.new("Frame", ScreenGui)
+    Frame.Size = UDim2.new(0, 300, 0, 150)
+    Frame.Position = UDim2.new(0.5, -150, 0.1, 0)
+    Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Frame.Active = true
+    Frame.Draggable = true
+
+    local Title = Instance.new("TextLabel", Frame)
+    Title.Size = UDim2.new(1, 0, 0, 30)
+    Title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    Title.Text = "Fruit Finder"
+    Title.TextSize = 18
+    Title.Font = Enum.Font.GothamBold
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    local ToggleButton = Instance.new("TextButton", Frame)
+    ToggleButton.Size = UDim2.new(1, 0, 0, 30)
+    ToggleButton.Position = UDim2.new(0, 0, 0, 35)
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    ToggleButton.Text = "Auto Collect: ON"
+    ToggleButton.Font = Enum.Font.Gotham
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    local ServerHopButton = Instance.new("TextButton", Frame)
+    ServerHopButton.Size = UDim2.new(1, 0, 0, 30)
+    ServerHopButton.Position = UDim2.new(0, 0, 0, 70)
+    ServerHopButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    ServerHopButton.Text = "Hop Server"
+    ServerHopButton.Font = Enum.Font.Gotham
+    ServerHopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    local CloseButton = Instance.new("TextButton", Frame)
+    CloseButton.Size = UDim2.new(1, 0, 0, 30)
+    CloseButton.Position = UDim2.new(0, 0, 0, 110)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    CloseButton.Text = "Close"
+    CloseButton.Font = Enum.Font.GothamBold
+    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    ToggleButton.MouseButton1Click:Connect(function()
+        Config.AutoFruit = not Config.AutoFruit
+        ToggleButton.Text = Config.AutoFruit and "Auto Collect: ON" or "Auto Collect: OFF"
+    end)
+
+    ServerHopButton.MouseButton1Click:Connect(function()
+        Teleport()
+    end)
+
+    CloseButton.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+    end)
+end
+
+-- Server Hop Function
+local PlaceID = game.PlaceId
+local AllIDs = {}
+local actualHour = os.date("!*t").hour
+local File = pcall(function()
+    AllIDs = HttpService:JSONDecode(readfile("NotSameServers.json"))
+end)
+if not File then
+    table.insert(AllIDs, actualHour)
+    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+end
+
+function TPReturner()
+    local Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
+    for _, v in pairs(Site.data) do
+        local ID = tostring(v.id)
+        if tonumber(v.maxPlayers) > tonumber(v.playing) and not table.find(AllIDs, ID) then
+            table.insert(AllIDs, ID)
+            writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+            TeleportService:TeleportToPlaceInstance(PlaceID, ID, plr)
+            wait(4)
         end
     end
 end
 
+function Teleport()
+    while task.wait() do
+        pcall(TPReturner)
+    end
+end
+
+-- Start fruit finder
 task.spawn(function()
     while task.wait() do
-        if Config.AutoStoreFruit then
+        if Config.AutoFruit then
             pcall(function()
-                for _, fr in ipairs(plr.Backpack:GetChildren()) do
-                    if fr:IsA("Tool") and fr.Name:find("Fruit") then
-                        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fr:GetAttribute("OriginalName"), fr)
-                    end
-                end
-                for _, fr in ipairs(plr.Character:GetChildren()) do
-                    if fr:IsA("Tool") and fr.Name:find("Fruit") then
-                        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fr:GetAttribute("OriginalName"), fr)
+                for _, v in ipairs(workspace:GetChildren()) do
+                    if v:IsA("Tool") and v.Name:find("fruit") then
+                        CollectItem(v)
+                    elseif v:IsA("Model") and (v.Name == "Fruit" or v.Name == "fruit") then
+                        CollectItem(v)
                     end
                 end
             end)
@@ -218,20 +186,5 @@ task.spawn(function()
     end
 end)
 
-plr.CharacterAdded:Connect(function(char)
-    char.ChildAdded:Connect(function(child)
-        if child:IsA("Tool") and child.Name:find("Fruit") then
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", child:GetAttribute("OriginalName"), child)
-        end
-    end)
-end)
-
-if plr.Character then
-    plr.Character.ChildAdded:Connect(function(child)
-        if child:IsA("Tool") and child.Name:find("Fruit") then
-            ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", child:GetAttribute("OriginalName"), child)
-        end
-    end)
-end
-
-StartFruitFinder()
+-- Start UI
+CreateUI()
