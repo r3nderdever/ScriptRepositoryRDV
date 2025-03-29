@@ -42,7 +42,11 @@ local fruitsList = {
 }
 
 -- Function to find nearest fruit
-local function findNearestFruit()
+local nearestFruit, minDistance, fruitCount = nil, math.huge, 0
+
+RunService.Heartbeat:Connect(function()
+    -- Re-check for fruits every 0.05 seconds
+task.wait(0.05) -- Re-check for fruits every 0.05 seconds
     local nearestFruit = nil
     local minDistance = math.huge
     local fruitCount = 0
@@ -74,6 +78,8 @@ end
 
 -- Update UI every 0.06 seconds
 RunService.RenderStepped:Connect(function()
+    -- Update UI every 0.07 seconds
+task.wait(0.07) -- Update UI every 0.07 seconds
     local nearestFruit, distance, fruitCount = findNearestFruit()
     if nearestFruit then
         fruitLabel.Text = "🍏 Nearest: " .. nearestFruit.Name .. " | 📏 Distance: " .. math.floor(distance) .. "m\n🍎 Total Fruits: " .. fruitCount
