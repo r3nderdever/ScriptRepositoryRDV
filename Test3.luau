@@ -6,7 +6,7 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 
 local plr = Players.LocalPlayer
-local Config = { NoFruitTime = 0 }
+local Config = { NoFruitTime = 3 }
 
 -- **🔵 Auto Join Marines**
 local function JoinMarines()
@@ -30,42 +30,65 @@ local ValidFruits = {
     ["Yeti Fruit"] = true
 }
 
+-- **🛠️ Auto Store Fruits**
+local function StoreFruit(tool)
+    if tool:IsA("Tool") and ValidFruits[tool.Name] then
+        task.spawn(function()
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", tool:GetAttribute("OriginalName"), tool)
+        end)
+    end
+end
+
 -- **📜 UI Setup**
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local UIFrame = Instance.new("Frame", ScreenGui)
-local UIText = Instance.new("TextLabel", UIFrame)
+local FruitLabel = Instance.new("TextLabel", UIFrame)
+local DistanceLabel = Instance.new("TextLabel", UIFrame)
+local TimerLabel = Instance.new("TextLabel", UIFrame)
+local UICorner = Instance.new("UICorner", UIFrame)
 
 ScreenGui.ResetOnSpawn = false
-UIFrame.Size = UDim2.new(0, 250, 0, 100)
-UIFrame.Position = UDim2.new(0.5, -125, 0.1, 0)
-UIFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Black
-UIFrame.BorderSizePixel = 3
-UIFrame.BorderColor3 = Color3.fromRGB(255, 140, 0) -- Orange outline
-UIFrame.BackgroundTransparency = 0.3
+UIFrame.Size = UDim2.new(0, 280, 0, 90)
+UIFrame.Position = UDim2.new(0.5, -140, 0.1, 0)
+UIFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+UIFrame.BorderSizePixel = 2
+UIFrame.BorderColor3 = Color3.fromRGB(255, 140, 0)
+UICorner.CornerRadius = UDim.new(0, 10)
 
-UIText.Size = UDim2.new(1, 0, 1, 0)
-UIText.BackgroundTransparency = 1
-UIText.TextColor3 = Color3.fromRGB(255, 255, 255) -- White text
-UIText.Font = Enum.Font.Cartoon
-UIText.TextScaled = true
-UIText.Text = "🍏 Fruit Name: ???\n📍 Fruit Distance: ???\n🔍 Status: Searching...\n\n🛠️ Made by R3nderDV. on Discord"
+local function CreateTextLabel(parent, yOffset, fontSize)
+    local label = Instance.new("TextLabel", parent)
+    label.Size = UDim2.new(1, -10, 0, fontSize)
+    label.Position = UDim2.new(0, 5, 0, yOffset)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.Cartoon
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextScaled = false
+    label.TextSize = fontSize
+    return label
+end
 
-local UICorner = Instance.new("UICorner", UIFrame)
-UICorner.CornerRadius = UDim.new(0, 10) -- Rounded corners
+FruitLabel = CreateTextLabel(UIFrame, 5, 20)
+DistanceLabel = CreateTextLabel(UIFrame, 30, 20)
+TimerLabel = CreateTextLabel(UIFrame, 55, 20)
+
+FruitLabel.Text = "🍏 Fruit Name: ???"
+DistanceLabel.Text = "📍 Fruit Distance: ???"
+TimerLabel.Text = "⏳ Server Hop In: 3s"
 
 -- **🍏 Detect & Teleport to Fruits**
 local function TeleportToNearestFruit()
-    while task.wait(0.06) do -- Updates every 0.06 seconds
+    while task.wait(0.06) do
         if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then continue end
 
         local root = plr.Character.HumanoidRootPart
-        root.AssemblyLinearVelocity = Vector3.zero -- Prevents being pushed
-        root.CanCollide = false -- Ignores collision
+        root.AssemblyLinearVelocity = Vector3.zero
+        root.CanCollide = false
 
         local closestFruit, closestDistance = nil, math.huge
 
         for _, v in ipairs(workspace:GetDescendants()) do
-            if v:IsA("Tool") and ValidFruits[v.Name] then -- ✅ Only valid fruits
+            if v:IsA("Tool") and ValidFruits[v.Name] and not v.Parent:IsA("Player") then
                 local fruitPos = v:FindFirstChild("Handle") and v.Handle.Position
                 if fruitPos then
                     local distance = (root.Position - fruitPos).Magnitude
@@ -80,16 +103,17 @@ local function TeleportToNearestFruit()
         if closestFruit then
             local fruitPos = closestFruit.Handle.Position
             if closestDistance <= 50 then
-                root.CFrame = CFrame.new(fruitPos) -- Instantly teleports if within 50 studs
+                root.CFrame = CFrame.new(fruitPos)
             else
                 local direction = (fruitPos - root.Position).Unit
-                root.CFrame = root.CFrame + direction * 8 -- Moves 8 studs every 0.04s
+                root.CFrame = root.CFrame + direction * 8
             end
-            Config.NoFruitTime = 0 -- Reset timer since a fruit is found
-            UIText.Text = "🍏 Fruit Name: " .. closestFruit.Name .. "\n📍 Fruit Distance: " .. math.floor(closestDistance) .. "m\n✅ Status: Found!"
+            Config.NoFruitTime = 3
+            FruitLabel.Text = "🍏 Fruit Name: " .. closestFruit.Name
+            DistanceLabel.Text = "📍 Fruit Distance: " .. math.floor(closestDistance) .. "m"
         else
-            Config.NoFruitTime += 0.06 -- Increase no-fruit timer
-            UIText.Text = "🍏 Fruit Name: ???\n📍 Fruit Distance: ???\n🔍 Status: Searching..."
+            Config.NoFruitTime = math.max(0, Config.NoFruitTime - 0.06)
+            TimerLabel.Text = "⏳ Server Hop In: " .. string.format("%.1f", Config.NoFruitTime) .. "s"
         end
     end
 end
@@ -98,9 +122,9 @@ task.spawn(TeleportToNearestFruit)
 
 -- **🌍 Server Hop (Only if No Fruits for 3 Seconds)**
 local function ServerHop()
-    if Config.NoFruitTime < 3 then return end -- Only server hop if 3s passed with no fruit
+    if Config.NoFruitTime > 0 then return end
 
-    task.wait(1) -- Small delay before hopping
+    task.wait(1)
 
     local success, servers = pcall(function()
         return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
@@ -116,15 +140,36 @@ local function ServerHop()
         end
 
         if #validServers > 0 then
-            UIText.Text = "🌍 Server Hopping..."
+            TimerLabel.Text = "🌍 Server Hopping..."
             TeleportService:TeleportToPlaceInstance(game.PlaceId, validServers[math.random(1, #validServers)])
         end
     end
 end
 
--- **🚀 Run Server Hop Check Every 0.5s**
 task.spawn(function()
     while task.wait(0.5) do
         ServerHop()
     end
 end)
+
+-- **🛠️ Auto Store Fruits (Constant Check)**
+task.spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            for _, fr in ipairs(plr.Backpack:GetChildren()) do
+                StoreFruit(fr)
+            end
+            for _, fr in ipairs(plr.Character:GetChildren()) do
+                StoreFruit(fr)
+            end
+        end)
+    end
+end)
+
+plr.CharacterAdded:Connect(function(char)
+    char.ChildAdded:Connect(StoreFruit)
+end)
+
+if plr.Character then
+    plr.Character.ChildAdded:Connect(StoreFruit)
+end
