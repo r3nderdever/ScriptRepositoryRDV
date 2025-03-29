@@ -3,11 +3,13 @@ local runService = game:GetService("RunService")
 local workspace = game:GetService("Workspace")
 local player = players.LocalPlayer
 
--- Create the UI
+-- Ensure the UI is created in PlayerGui
 local gui = Instance.new("ScreenGui")
 gui.Name = "FruitNotifier"
+gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
+-- Create Frame
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 250, 0, 100)
 frame.Position = UDim2.new(0.05, 0, 0.2, 0)
@@ -19,7 +21,11 @@ frame.ClipsDescendants = true
 frame.BackgroundTransparency = 0.2
 frame.Active = true
 frame.Draggable = true
-frame.CornerRadius = UDim.new(0, 10)
+
+-- Add Rounded Corners
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = frame
 
 -- Title
 local title = Instance.new("TextLabel")
@@ -103,5 +109,5 @@ local function updateFruitInfo()
     end
 end
 
--- Run the update function in a separate thread
+-- Run the update function in a separate thread after UI loads
 task.spawn(updateFruitInfo)
