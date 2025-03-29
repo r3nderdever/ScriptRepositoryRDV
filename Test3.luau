@@ -1,12 +1,13 @@
--- Services
+--// Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 
--- Variables
+--// Variables
 local plr = Players.LocalPlayer
+local serverHopDelay = 5 -- Time between server hop retries (seconds)
 local serverHopTimer = 4 -- Time till server hop when no fruit is found
 local teleportSpeed = 150 -- studs per second
 local teleportInterval = 0.002 -- seconds per step
@@ -23,7 +24,7 @@ local fruitsList = {
     "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
 }
 
--- UI Setup
+--// UI Setup
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = plr:FindFirstChild("PlayerGui") or plr:WaitForChild("PlayerGui")
 
@@ -36,7 +37,7 @@ infoLabel.TextColor3 = Color3.new(1, 1, 1)
 infoLabel.TextScaled = true
 infoLabel.Text = "Searching for fruit..."
 
--- Function to join Marines
+--// Function to Join Marines Team
 local function JoinTeam()
     if plr.Team ~= game.Teams.Marines then
         local success, _ = pcall(function()
@@ -48,7 +49,7 @@ local function JoinTeam()
     end
 end
 
--- Detect Nearest Fruit
+--// Detect Nearest Fruit
 local function GetNearestFruit()
     local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil, math.huge end
@@ -67,7 +68,7 @@ local function GetNearestFruit()
     return nearestFruit, nearestDistance
 end
 
--- Move Towards Nearest Fruit
+--// Move Towards Nearest Fruit
 local function MoveTowardsFruit()
     while task.wait(teleportInterval) do
         local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
@@ -95,29 +96,40 @@ local function MoveTowardsFruit()
     end
 end
 
--- Server Hop Function
+--// Server Hop Function (Infinite Retries with Delay)
 local function ServerHop()
-    local success, response = pcall(function()
-        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-        local availableServers = {}
-        
-        for _, server in ipairs(servers.data) do
-            if server.id ~= game.JobId and server.playing < server.maxPlayers then
-                table.insert(availableServers, server.id)
+    while true do
+        local success, response = pcall(function()
+            local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+
+        if success and response and response.data then
+            local availableServers = {}
+
+            -- Filter valid servers
+            for _, server in ipairs(response.data) do
+                if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                    table.insert(availableServers, server.id)
+                end
             end
+
+            -- If there are valid servers, teleport
+            if #availableServers > 0 then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, availableServers[math.random(#availableServers)])
+                return -- Exit function after teleport
+            else
+                warn("No available servers found, retrying in " .. serverHopDelay .. "s...")
+            end
+        else
+            warn("Failed to get server list, retrying in " .. serverHopDelay .. "s...")
         end
 
-        if #availableServers > 0 then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, availableServers[math.random(#availableServers)])
-        else
-            warn("No available servers found.")
-        end
-    end)
-    
-    if not success then warn("Server hop failed: " .. tostring(response)) end
+        task.wait(serverHopDelay) -- Delay before retrying
+    end
 end
 
--- Start Processes
+--// Start Processes
 JoinTeam()
 task.spawn(MoveTowardsFruit)
 
