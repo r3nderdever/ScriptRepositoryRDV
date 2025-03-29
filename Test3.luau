@@ -13,6 +13,7 @@ local teleportIncrement = 0.4 -- studs per step
 local teleportInterval = 0.002 -- seconds per step
 local instantTeleportRadius = 50 -- studs
 local lastFruitTime = tick()
+local lastServerHop = tick()
 
 local fruitsList = {
     "Fruit", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
@@ -88,16 +89,12 @@ end
 
 -- Server Hop Function
 local function ServerHop()
+    lastServerHop = tick()
     local success, response = pcall(function()
         local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-        local validServers = {}
-        for _, server in ipairs(servers.data) do
-            if server.id ~= game.JobId then
-                table.insert(validServers, server.id)
-            end
-        end
-        if #validServers > 0 then
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, validServers[math.random(1, #validServers)])
+        local server = servers.data[math.random(1, #servers.data)]
+        if server then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
         end
     end)
     if not success then warn("Server hop failed: " .. tostring(response)) end
