@@ -8,16 +8,13 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
--- Auto-Join Marines Team
-local function joinMarines()
-    local teams = game:GetService("Teams")
-    local marinesTeam = teams:FindFirstChild("Marines")
-    if marinesTeam then
-        player.Team = marinesTeam
+local function JoinTeam()
+    if plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates then
+        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
     end
 end
 
-joinMarines()
+JoinTeam()
 
 -- UI Setup
 local screenGui = Instance.new("ScreenGui")
