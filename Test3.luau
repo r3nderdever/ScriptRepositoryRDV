@@ -1,69 +1,67 @@
 repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer
 
-local Players, ReplicatedStorage, TweenService, HttpService, TeleportService = 
-    game:GetService("Players"), 
-    game:GetService("ReplicatedStorage"),
-    game:GetService("TweenService"),
-    game:GetService("HttpService"),
-    game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 
 local plr = Players.LocalPlayer
-local PlaceID = game.PlaceId
-local AllIDs = {}
-local foundAnything = ""
-local actualHour = os.date("!*t").hour
-local lastServerHop = tick()
+local webhookURL = "https://discord.com/api/webhooks/1332763994758316172/ya0sKT_D0t-iGSxH9pGyQOtYdIIa1Ekq1DrS3zbCN68MbFlw_fl1A64kRRYWCGcIZNV3"
 
--- Webhook Setup
-local WebhookURL = "https://discord.com/api/webhooks/1332763994758316172/ya0sKT_D0t-iGSxH9pGyQOtYdIIa1Ekq1DrS3zbCN68MbFlw_fl1A64kRRYWCGcIZNV3"
+local Config = {
+    AutoFruit = true,
+    AutoStoreFruit = true,
+    FruitLog = {}
+}
 
--- Load stored server IDs
-local File = pcall(function()
-    AllIDs = HttpService:JSONDecode(readfile("NotSameServers.json"))
-end)
-if not File then
-    table.insert(AllIDs, actualHour)
-    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
-end
-
--- Function to hop servers
-local function ServerHop()
-    local Site = foundAnything == "" 
-        and HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
-        or HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
-
-    local ID = ""
-    if Site.nextPageCursor then foundAnything = Site.nextPageCursor end
-    for _, v in pairs(Site.data) do
-        if v.playing >= 5 and v.playing <= 11 and v.id then
-            ID = tostring(v.id)
-            if not table.find(AllIDs, ID) then
-                table.insert(AllIDs, ID)
-                pcall(function()
-                    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
-                    task.wait(0.3)
-                    TeleportService:TeleportToPlaceInstance(PlaceID, ID, plr)
-                end)
-                return
-            end
-        end
+-- Function to ensure player joins Marines team
+local function JoinMarines()
+    while plr.Team ~= game.Teams.Marines do
+        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
+        task.wait(1) -- Retry every second until successful
     end
 end
 
--- Function to send a Discord webhook
+task.spawn(JoinMarines) -- Run Marines team join process in the background
+
+-- Webhook function to send fruit finds to Discord
 local function SendWebhook(fruitName)
-    local data = {
-        ["content"] = "**Fruit Found!**",
-        ["embeds"] = {{
-            ["title"] = "🍇 Fruit Notification",
-            ["description"] = "**Fruit:** " .. fruitName .. "\n**Found By:** " .. plr.Name .. "\n**Time:** " .. os.date("%Y-%m-%d %H:%M:%S"),
-            ["color"] = 16711680
-        }}
-    }
-    HttpService:PostAsync(WebhookURL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson)
+    local payload = HttpService:JSONEncode({
+        content = "**Fruit Found!** 🍏\n**Fruit:** " .. fruitName .. "\n**Player:** " .. plr.Name .. "\n**Time:** " .. os.date("%Y-%m-%d %H:%M:%S")
+    })
+    
+    HttpService:PostAsync(webhookURL, payload, Enum.HttpContentType.ApplicationJson)
 end
 
--- Function to store fruit
+-- Function to collect fruit
+local function CollectFruit(item)
+    if not item then return false end
+    
+    if item:IsA("Tool") then
+        local handle = item:FindFirstChild("Handle")
+        if handle then
+            handle.CFrame = plr.Character.HumanoidRootPart.CFrame
+            task.wait(0.5)
+            SendWebhook(item.Name) -- Send to webhook
+            return true
+        end
+    elseif item:IsA("Model") and item.Name:lower() == "fruit" then
+        local basePart = item:FindFirstChildOfClass("BasePart")
+        if basePart then
+            local startTime = tick()
+            repeat
+                plr.Character.HumanoidRootPart.CFrame = basePart.CFrame + Vector3.new(0, 3, 0)
+                task.wait()
+            until not item:IsDescendantOf(workspace) or tick() - startTime > 10
+            SendWebhook("Unknown Fruit")
+            return true
+        end
+    end
+    
+    return false
+end
+
+-- Auto store fruit function
 local function StoreFruit(tool)
     if tool:IsA("Tool") and tool.Name:find("Fruit") then
         task.spawn(function()
@@ -72,51 +70,132 @@ local function StoreFruit(tool)
     end
 end
 
--- Fruit collection function
-local function CollectFruit()
-    local foundFruit = false
-    local collected = false
+-- Server hop function (Optimized)
+local function ServerHop()
+    local PlaceID = game.PlaceId
+    local AllIDs = {}
+    local foundAnything = ""
+    local actualHour = os.date("!*t").hour
+    local Deleted = false
+    local File = pcall(function()
+        AllIDs = HttpService:JSONDecode(readfile("NotSameServers.json"))
+    end)
+    
+    if not File then
+        table.insert(AllIDs, actualHour)
+        writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+    end
 
-    for _, v in ipairs(workspace:GetChildren()) do
-        if v:IsA("Tool") and v.Name:find("fruit") then
-            foundFruit = true
-            plr.Character.HumanoidRootPart.CFrame = v.Handle.CFrame
-            task.wait(0.5)
-            if not v:IsDescendantOf(workspace) then
-                SendWebhook(v.Name)
-                StoreFruit(v)
-                collected = true
+    local function TPReturner()
+        local Site
+        if foundAnything == "" then
+            Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
+        else
+            Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
+        end
+        
+        local ID = ""
+        if Site.nextPageCursor then
+            foundAnything = Site.nextPageCursor
+        end
+
+        for _, v in pairs(Site.data) do
+            if v.playing >= 5 and v.playing <= 11 then
+                local Possible = true
+                ID = tostring(v.id)
+
+                for _, Existing in pairs(AllIDs) do
+                    if ID == tostring(Existing) then
+                        Possible = false
+                    end
+                end
+
+                if Possible then
+                    table.insert(AllIDs, ID)
+                    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+                    TeleportService:TeleportToPlaceInstance(PlaceID, ID, plr)
+                    task.wait(4)
+                end
             end
         end
     end
 
-    return collected
+    while true do
+        pcall(TPReturner)
+        task.wait(0.3)
+    end
 end
 
--- Main loop for finding fruits and server hopping
-task.spawn(function()
-    while task.wait() do
-        pcall(function()
-            if CollectFruit() then
-                lastServerHop = tick()  -- Reset hop timer
-            elseif tick() - lastServerHop > 5 then
-                ServerHop()
-            end
-        end)
-    end
-end)
+-- UI Setup
+local function CreateUI()
+    local ui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+    local frame = Instance.new("Frame", ui)
+    local title = Instance.new("TextLabel", frame)
+    
+    frame.Size = UDim2.new(0, 250, 0, 120)
+    frame.Position = UDim2.new(0.8, -250, 0.3, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    frame.BorderSizePixel = 2
+    frame.BorderColor3 = Color3.fromRGB(255, 255, 255)
 
--- Auto-store feature
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.BackgroundTransparency = 1
+    title.Font = Enum.Font.GothamBold
+    title.Text = "🌍 Fruit Finder UI"
+    title.TextSize = 18
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    return frame
+end
+
+local function MainLoop()
+    local lastServerHop = tick()
+    local frame = CreateUI()
+
+    while task.wait() do
+        if Config.AutoFruit then
+            pcall(function()
+                local fruitFound = false
+                
+                for _, v in ipairs(workspace:GetChildren()) do
+                    if v:IsA("Tool") and v.Name:find("fruit") then
+                        fruitFound = true
+                        CollectFruit(v)
+                        break
+                    end
+                end
+                
+                if not fruitFound then
+                    for _, v in ipairs(workspace:GetChildren()) do
+                        if v:IsA("Model") and v.Name:lower() == "fruit" then
+                            fruitFound = true
+                            CollectFruit(v)
+                            break
+                        end
+                    end
+                end
+
+                if not fruitFound and tick() - lastServerHop >= 5 then
+                    lastServerHop = tick()
+                    task.spawn(ServerHop)
+                end
+            end)
+        end
+    end
+end
+
 task.spawn(function()
     while task.wait() do
-        pcall(function()
-            for _, item in ipairs(plr.Backpack:GetChildren()) do
-                StoreFruit(item)
-            end
-            for _, item in ipairs(plr.Character:GetChildren()) do
-                StoreFruit(item)
-            end
-        end)
+        if Config.AutoStoreFruit then
+            pcall(function()
+                for _, fr in ipairs(plr.Backpack:GetChildren()) do
+                    StoreFruit(fr)
+                end
+                for _, fr in ipairs(plr.Character:GetChildren()) do
+                    StoreFruit(fr)
+                end
+            end)
+        end
     end
 end)
 
@@ -126,4 +205,7 @@ end)
 
 if plr.Character then
     plr.Character.ChildAdded:Connect(StoreFruit)
-end)
+end
+
+print("🔥 Script Loaded Successfully! 🔥")
+task.spawn(MainLoop)
