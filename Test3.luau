@@ -4,92 +4,72 @@ local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
-local PhysicsService = game:GetService("PhysicsService")
 
 --// Variables
 local plr = Players.LocalPlayer
-local serverHopDelay = 5 -- Delay between server hop retries (seconds)
+local webhookURL = "https://discord.com/api/webhooks/1332763994758316172/ya0sKT_D0t-iGSxH9pGyQOtYdIIa1Ekq1DrS3zbCN68MbFlw_fl1A64kRRYWCGcIZNV3"
+
+local serverHopDelay = 5 -- Delay before retrying if no different server is found
 local serverHopTimer = 4 -- Time until server hop when no fruit is found
 local teleportSpeed = 178 -- Studs per second
 local teleportInterval = 0.002 -- Seconds per step
 local instantTeleportRadius = 50 -- Studs
-local collisionRadius = 40 -- Players become solid within this range
 local lastFruitTime = tick()
-local running = true
 
-local fruitsList = {
-    "Fruit", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
-    "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit",
-    "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit",
-    "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
-    "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit",
-    "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit",
-    "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
-}
+--// Send Webhook Notification
+local function SendWebhookNotification(fruitName)
+    local data = {
+        ["username"] = "Fruit Finder",
+        ["avatar_url"] = "https://static.wikia.nocookie.net/blox-fruits/images/d/d7/Game_Icon.png",
+        ["embeds"] = {{
+            ["title"] = "🍍 Fruit Found!",
+            ["description"] = "**A new fruit has been found!**",
+            ["color"] = 16755200, -- Orange color
+            ["fields"] = {
+                {["name"] = "📝 Fruit Name", ["value"] = "**" .. fruitName .. "**", ["inline"] = true},
+                {["name"] = "👤 Player", ["value"] = "**" .. plr.Name .. "**", ["inline"] = true},
+                {["name"] = "⏳ Time Found", ["value"] = "```" .. os.date("%Y-%m-%d %H:%M:%S") .. "```", ["inline"] = false}
+            }
+        }}
+    }
 
---// Setup Collision Groups
-PhysicsService:CreateCollisionGroup("NoCollide")
-PhysicsService:CollisionGroupSetCollidable("NoCollide", "NoCollide", false)
+    local success, response = pcall(function()
+        HttpService:PostAsync(webhookURL, HttpService:JSONEncode(data), Enum.HttpContentType.ApplicationJson, false)
+    end)
 
---// Function to Join Marines Team
-local function JoinTeam()
-    if plr.Team ~= game.Teams.Marines then
-        local success, _ = pcall(function()
-            return ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
-        end)
-        if success then
-            repeat task.wait(1) until plr.Team == game.Teams.Marines
-        end
+    if success then
+        print("[✅] Webhook Sent: " .. fruitName)
+    else
+        warn("[❌] Webhook Failed!")
     end
 end
 
---// Prevent Character from Being Pushed
-local function PreventPush()
-    local character = plr.Character
-    if character then
-        for _, part in ipairs(character:GetChildren()) do
-            if part:IsA("BasePart") then
-                part.AssemblyLinearVelocity = Vector3.zero -- Prevent being pushed
-            end
-        end
+--// Collect Fruit & Store Automatically
+local function CollectFruit(item)
+    if item:IsA("Tool") and item.Name:find("Fruit") then
+        local fruitName = item:GetAttribute("OriginalName") or item.Name
+        print("[🍍] Found Fruit: " .. fruitName)
+
+        -- Teleport to fruit
+        plr.Character.HumanoidRootPart.CFrame = item.Handle.CFrame
+        task.wait(1)
+
+        -- Store the fruit
+        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fruitName, item)
+
+        -- Send Discord Webhook
+        SendWebhookNotification(fruitName)
     end
 end
 
---// Disable Gravity and Movement
-local function DisableGravity()
-    local humanoid = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
-    local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-    
-    if humanoid then
-        humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false) -- Prevent falling
-        humanoid.PlatformStand = true -- Stops movement while teleporting
-        humanoid.AutoRotate = false -- Prevents auto-rotation
-    end
-
-    if hrp then
-        hrp.AssemblyLinearVelocity = Vector3.zero -- Stops external forces
-    end
-end
-
---// Enable Gravity
-local function EnableGravity()
-    local humanoid = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
-        humanoid.PlatformStand = false
-        humanoid.AutoRotate = true
-    end
-end
-
---// Detect Nearest Fruit
+--// Find Nearest Fruit
 local function GetNearestFruit()
     local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return nil, math.huge end
-    
+
     local nearestFruit, nearestDistance = nil, math.huge
-    for _, fruitName in ipairs(fruitsList) do
-        local fruit = Workspace:FindFirstChild(fruitName)
-        if fruit and fruit:FindFirstChild("Handle") then
+    for _, fruit in ipairs(Workspace:GetChildren()) do
+        if fruit:IsA("Tool") and fruit.Name:find("Fruit") then
             local distance = (hrp.Position - fruit.Handle.Position).Magnitude
             if distance < nearestDistance then
                 nearestDistance = distance
@@ -102,7 +82,7 @@ end
 
 --// Move Towards Nearest Fruit
 local function MoveTowardsFruit()
-    while running and task.wait(teleportInterval) do
+    while task.wait(teleportInterval) do
         local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
         if not hrp then continue end
 
@@ -112,13 +92,11 @@ local function MoveTowardsFruit()
 
             if distance <= instantTeleportRadius then
                 hrp.CFrame = nearestFruit.Handle.CFrame -- Instant teleport
-                EnableGravity()
+                CollectFruit(nearestFruit)
             else
-                DisableGravity()
                 local direction = (nearestFruit.Handle.Position - hrp.Position).unit
                 local stepSize = math.min(teleportSpeed * teleportInterval, distance)
                 hrp.CFrame = hrp.CFrame + direction * stepSize
-                PreventPush()
             end
         else
             if tick() - lastFruitTime >= serverHopTimer then
@@ -128,57 +106,43 @@ local function MoveTowardsFruit()
     end
 end
 
---// 5 Different Server Hop Methods
+--// Random Server Hop System
 local function ServerHop()
-    local methods = {
-        -- Primary API Method
-        function()
-            local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-            if servers and servers.data and #servers.data > 0 then
-                local server = servers.data[math.random(1, #servers.data)]
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
-            end
-        end,
+    local currentServerId = game.JobId
+    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100"))
 
-        -- Random Server Indexing
-        function()
-            local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=" .. math.random(50, 100)))
-            if servers and servers.data and #servers.data > 0 then
-                local server = servers.data[math.random(1, #servers.data)]
+    if servers and servers.data then
+        for _, server in ipairs(servers.data) do
+            if server.id ~= currentServerId then
                 TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
-            end
-        end,
-
-        -- Filtered Server Selection (Avoid low player counts)
-        function()
-            local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100"))
-            local filtered = {}
-            for _, s in ipairs(servers.data) do
-                if s.playing and s.playing > 5 then
-                    table.insert(filtered, s)
-                end
-            end
-            if #filtered > 0 then
-                local server = filtered[math.random(1, #filtered)]
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
-            end
-        end,
-
-        -- Sort By Random Criteria
-        function()
-            local sort = {"Asc", "Desc"}
-            local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=" .. sort[math.random(1, 2)] .. "&limit=100"))
-            if servers and servers.data and #servers.data > 0 then
-                local server = servers.data[math.random(1, #servers.data)]
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
+                return
             end
         end
-    }
-
-    local method = methods[math.random(1, #methods)]
-    method()
+    end
 end
 
---// Start Processes
+--// Server Hop Timer
+local function CheckForServerHop()
+    if tick() - lastFruitTime >= serverHopTimer then
+        ServerHop()
+    end
+end
+
+--// Start Fruit Collection & Server Hop System
 task.spawn(MoveTowardsFruit)
-plr.CharacterAdded:Connect(function() task.wait(1) MoveTowardsFruit() end)
+task.spawn(function()
+    while task.wait(serverHopDelay) do
+        CheckForServerHop()
+    end
+end)
+
+--// Detect Fruits in the Game
+task.spawn(function()
+    while task.wait(3) do
+        for _, v in ipairs(workspace:GetChildren()) do
+            if v:IsA("Tool") and v.Name:find("Fruit") then
+                CollectFruit(v)
+            end
+        end
+    end
+end)
