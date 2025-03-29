@@ -2,77 +2,55 @@ repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPla
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
 local plr = Players.LocalPlayer
-local webhookURL = "https://discord.com/api/webhooks/1332763994758316172/ya0sKT_D0t-iGSxH9pGyQOtYdIIa1Ekq1DrS3zbCN68MbFlw_fl1A64kRRYWCGcIZNV3"
 
-local Config = {
-    AutoFruit = true,
-    FruitLog = {}
-}
-
--- Function to ensure player joins Marines team
+-- Function to make sure player joins Marines on spawn
 local function JoinMarines()
     while plr.Team ~= game.Teams.Marines do
         ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
         task.wait(1)
     end
 end
+task.spawn(JoinMarines)
 
-task.spawn(JoinMarines) -- Run Marines team join process in the background
-
--- **💎 Stunning Futuristic UI Creation 💎**
+-- **🔥 Stunning Orange-Red UI Creation 🔥**
 local function CreateUI()
     local ui = Instance.new("ScreenGui", game:GetService("CoreGui"))
     local frame = Instance.new("Frame", ui)
     local title = Instance.new("TextLabel", frame)
     local fruitLabel = Instance.new("TextLabel", frame)
-    local button1 = Instance.new("TextButton", frame)
     local credit = Instance.new("TextLabel", frame)
 
-    -- **🌟 UI Styling 🌟**
+    -- **🎨 UI Styling 🎨**
     frame.Size = UDim2.new(0, 350, 0, 200)
     frame.Position = UDim2.new(0.7, -175, 0.3, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(15, 15, 30)
+    frame.BackgroundColor3 = Color3.fromRGB(200, 50, 30) -- 🔥 Orange-Red
     frame.BorderSizePixel = 0
     frame.BackgroundTransparency = 0.2
 
-    -- Neon glow effect
-    local glow = Instance.new("UIStroke", frame)
-    glow.Color = Color3.fromRGB(0, 255, 255)
-    glow.Thickness = 2
-    glow.Transparency = 0.3
+    -- Rounded corners
+    local corner = Instance.new("UICorner", frame)
+    corner.CornerRadius = UDim.new(0, 15)
 
     -- Title
     title.Size = UDim2.new(1, 0, 0, 30)
     title.BackgroundTransparency = 1
     title.Font = Enum.Font.GothamBold
-    title.Text = "🍏 Fruit Detector UI"
+    title.Text = "🔥 Fruit Detector UI"
     title.TextSize = 20
-    title.TextColor3 = Color3.fromRGB(0, 255, 255)
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
 
     -- Fruit Label
     fruitLabel.Size = UDim2.new(1, -10, 0, 50)
     fruitLabel.Position = UDim2.new(0, 5, 0, 40)
-    fruitLabel.Text = "Searching for Fruits..."
+    fruitLabel.Text = "🔍 Searching for Fruits..."
     fruitLabel.Font = Enum.Font.Gotham
     fruitLabel.TextSize = 18
     fruitLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     fruitLabel.BackgroundTransparency = 1
-
-    -- Toggle Auto Fruit Button
-    button1.Size = UDim2.new(1, -10, 0, 40)
-    button1.Position = UDim2.new(0, 5, 0, 90)
-    button1.Text = "Toggle Auto Fruit"
-    button1.Font = Enum.Font.Gotham
-    button1.TextSize = 16
-    button1.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button1.BackgroundColor3 = Color3.fromRGB(20, 20, 50)
 
     -- Credit Label
     credit.Size = UDim2.new(1, 0, 0, 20)
@@ -122,7 +100,7 @@ local function CreateUI()
     return frame, fruitLabel
 end
 
--- **Fruit Detection System**
+-- **🍏 Fruit Detection System**
 local function DetectFruits(fruitLabel)
     while task.wait(1) do
         local closestFruit = nil
@@ -149,7 +127,7 @@ local function DetectFruits(fruitLabel)
     end
 end
 
--- **Run Main UI and Logic**
+-- **🚀 Run UI & Fruit Detection**
 local function MainLoop()
     local frame, fruitLabel = CreateUI()
 
