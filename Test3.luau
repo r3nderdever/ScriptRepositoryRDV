@@ -93,7 +93,7 @@ local function GetNearestFruit()
     for _, fruitName in ipairs(fruitsList) do
         local fruit = Workspace:FindFirstChild(fruitName)
         if fruit and fruit:FindFirstChild("Handle") then
-            local distance = (plr.Character.HumanoidRootPart.Position - fruit.Handle.Position).Magnitude
+            local distance = (plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")) and (plr.Character.HumanoidRootPart.Position - fruit.Handle.Position).Magnitude or math.huge
             if distance < nearestDistance then
                 nearestDistance = distance
                 nearestFruit = fruit
@@ -108,7 +108,7 @@ end
 local function MoveToFruit()
     while true do
         local fruit, distance = GetNearestFruit()
-        if fruit then
+        if fruit and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
             fruitLabel.Text = string.format("Distance: %.2f | Blox Fruit: %s | Time Till ServerH: %.1f", distance, fruit.Name, timer)
             
             -- Set gravity to 0 to prevent falling
@@ -118,7 +118,6 @@ local function MoveToFruit()
             -- Move towards fruit
             local direction = (fruit.Handle.Position - plr.Character.HumanoidRootPart.Position).unit * 20
             plr.Character.HumanoidRootPart.CFrame = plr.Character.HumanoidRootPart.CFrame + direction
-            
         else
             timer = timer - 0.1
             fruitLabel.Text = string.format("Distance: ??? | Blox Fruit: ??? | Time Till ServerH: %.1f", timer)
@@ -136,9 +135,9 @@ local function ServerHop()
         return HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
     end)
     
-    if success and response and response.data then
+    if success and response and response.data and #response.data > 0 then
         local server = response.data[math.random(1, #response.data)]
-        if server then
+        if server and server.id then
             TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
         end
     end
