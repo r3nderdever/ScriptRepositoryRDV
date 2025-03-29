@@ -190,7 +190,7 @@ task.spawn(function()
                 end
             else
                 StatusLabel.Text = "No fruit found... Server hopping soon."
-                task.wait(6)
+                task.wait(2.5)
                 Teleport() -- Call the improved server hop function
             end
         end)
