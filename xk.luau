@@ -1,144 +1,80 @@
---// Teleportation script with smooth random teleport, shadow clones, and camera transition
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
-local camera = workspace.CurrentCamera
 
--- Ensure we get the player's character
-local function getCharacter()
-    return player.Character or player.CharacterAdded:Wait()
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Function to create the black squircle button
+local function createButton()
+    local part = Instance.new("Part")
+    part.Size = Vector3.new(4, 1, 4)
+    part.Shape = Enum.PartType.Cylinder -- Makes it a squircle-like button
+    part.Material = Enum.Material.SmoothPlastic
+    part.Color = Color3.fromRGB(0, 0, 0) -- Black color
+    part.Transparency = 0
+    part.Position = Vector3.new(0, 1, 0) -- Adjust position as needed
+    part.Anchored = true
+    part.CanCollide = false
+    part.Parent = workspace
+
+    return part
 end
 
--- Create GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = player:WaitForChild("PlayerGui")
-screenGui.ResetOnSpawn = false
+local button = createButton()
 
--- Create teleport button
-local button = Instance.new("TextButton")
-button.Parent = screenGui
-button.Size = UDim2.new(0, 80, 0, 80)
-button.Position = UDim2.new(1, -100, 0.5, -40) -- Right side
-button.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Black button
-button.Text = ""
-button.BorderSizePixel = 0
-button.AutoButtonColor = false
-
--- Rounded corners
-local uicorner = Instance.new("UICorner", button)
-uicorner.CornerRadius = UDim.new(0.3, 0)
-
--- White outline
-local outline = Instance.new("UIStroke", button)
-outline.Thickness = 2
-outline.Color = Color3.fromRGB(255, 255, 255)
-
--- Glow effect
-local glow = Instance.new("ImageLabel", button)
-glow.Size = UDim2.new(1.6, 0, 1.6, 0)
-glow.Position = UDim2.new(-0.3, 0, -0.3, 0)
-glow.BackgroundTransparency = 1
-glow.Image = "rbxassetid://4996891970"
-glow.ImageColor3 = Color3.fromRGB(255, 255, 255)
-glow.ImageTransparency = 0.7
-glow.Parent = button
-
--- Function to create a fading shadow clone
-local function createShadowClone(character)
+-- Function to create a fading black clone
+local function createGhostClone(character)
     local clone = character:Clone()
-    clone.Parent = game.Workspace
-    clone.Name = "ShadowClone"
+    clone.Parent = workspace
 
-    -- Modify clone appearance
+    -- Make the clone black and transparent
     for _, obj in ipairs(clone:GetDescendants()) do
         if obj:IsA("BasePart") then
-            obj.Material = Enum.Material.SmoothPlastic
-            obj.Color = Color3.new(0, 0, 0) -- Black
-            obj.Transparency = 0.3
-            obj.Anchored = true -- Prevent falling
+            obj.Color = Color3.fromRGB(0, 0, 0) -- Black
+            obj.Transparency = 0.3 -- Semi-transparent
             obj.CanCollide = false
-        elseif obj:IsA("Decal") or obj:IsA("Texture") then
-            obj:Destroy() -- Remove textures
-        elseif obj:IsA("Script") then
-            obj:Destroy() -- Remove scripts to avoid conflicts
+        elseif obj:IsA("Humanoid") then
+            obj.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
         end
     end
 
-    -- Fade out over 1 second
-    local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    for _, obj in ipairs(clone:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            local tween = TweenService:Create(obj, tweenInfo, { Transparency = 1 })
-            tween:Play()
-        end
-    end
-
-    -- Destroy clone after tween ends
+    -- Fade the clone out
+    local fadeTween = TweenService:Create(
+        clone,
+        TweenInfo.new(1, Enum.EasingStyle.Linear), -- 1-second fade
+        {Transparency = 1}
+    )
+    fadeTween:Play()
+    
+    -- Destroy the clone after 1 second
     task.delay(1, function()
         clone:Destroy()
     end)
 end
 
--- Function to smoothly transition the camera
-local function smoothCameraTransition(targetPosition)
-    local tweenInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local newCFrame = CFrame.lookAt(camera.CFrame.Position, targetPosition)
-    local tween = TweenService:Create(camera, tweenInfo, { CFrame = newCFrame })
-    tween:Play()
-end
-
--- Function to teleport the player randomly between left and right
+-- Function to teleport the player
 local function teleportPlayer()
-    local char = getCharacter()
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not character then return end
 
-    if hrp then
-        -- Generate a random teleport distance (-20 = left, 20 = right)
-        local randomOffset = math.random(-20, 20)
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
 
-        -- Compute target position
-        local targetPosition = hrp.Position + Vector3.new(randomOffset, 0, 0)
-        local targetCFrame = CFrame.new(targetPosition)
+    -- Save original position and create the clone
+    local originalPosition = rootPart.Position
+    createGhostClone(character)
 
-        -- Raycast to check if teleport is safe
-        local rayDirection = Vector3.new(randomOffset, 0, 0)
-        local raycastParams = RaycastParams.new()
-        raycastParams.FilterDescendantsInstances = {char}
-        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    -- Calculate new teleport position (randomly between -35 to 35 studs)
+    local randomDistance = math.random(-35, 35)
+    local newPosition = originalPosition + Vector3.new(randomDistance, 0, 0)
 
-        local raycastResult = workspace:Raycast(hrp.Position, rayDirection, raycastParams)
-
-        -- Attempt teleportation
-        if not raycastResult then
-            -- Create shadow clone before teleporting
-            task.spawn(createShadowClone, char)
-
-            -- Teleport instantly
-            hrp.CFrame = targetCFrame
-
-            -- Smooth camera transition
-            smoothCameraTransition(hrp.Position)
-        else
-            warn("Teleport blocked by an obstacle. Trying a different spot...")
-
-            -- Try teleporting again with a different offset
-            local secondOffset = math.random(-20, 20)
-            local secondTarget = hrp.Position + Vector3.new(secondOffset, 0, 0)
-            local secondCFrame = CFrame.new(secondTarget)
-            local secondResult = workspace:Raycast(hrp.Position, Vector3.new(secondOffset, 0, 0), raycastParams)
-
-            if not secondResult then
-                task.spawn(createShadowClone, char)
-                hrp.CFrame = secondCFrame
-                smoothCameraTransition(hrp.Position)
-            else
-                warn("Second teleport attempt also blocked. No valid teleport spots available.")
-            end
-        end
-    end
+    -- Teleport the player
+    rootPart.Position = newPosition
 end
 
--- Connect button click to teleport function
-button.MouseButton1Click:Connect(teleportPlayer)
+-- Detect user touches on the button
+button.Touched:Connect(function(hit)
+    local playerTouched = Players:GetPlayerFromCharacter(hit.Parent)
+    if playerTouched and playerTouched == player then
+        teleportPlayer()
+    end
+end)
