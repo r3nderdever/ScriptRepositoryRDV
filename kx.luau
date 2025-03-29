@@ -1,13 +1,15 @@
-local players = game:GetService("Players")
-local runService = game:GetService("RunService")
-local workspace = game:GetService("Workspace")
-local player = players.LocalPlayer
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
--- Ensure the UI is created in PlayerGui
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Create ScreenGui
 local gui = Instance.new("ScreenGui")
 gui.Name = "FruitNotifier"
 gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
+gui.Parent = playerGui
 
 -- Create Frame
 local frame = Instance.new("Frame")
@@ -17,12 +19,10 @@ frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 frame.BorderSizePixel = 2
 frame.BorderColor3 = Color3.fromRGB(255, 255, 255)
 frame.Parent = gui
-frame.ClipsDescendants = true
-frame.BackgroundTransparency = 0.2
 frame.Active = true
 frame.Draggable = true
 
--- Add Rounded Corners
+-- Rounded Corners
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 10)
 corner.Parent = frame
@@ -37,8 +37,9 @@ title.Font = Enum.Font.SourceSansBold
 title.TextScaled = true
 title.Parent = frame
 
--- Info labels
+-- Labels
 local totalFruits = Instance.new("TextLabel")
+totalFruits.Text = "📍 Fruits in Server: 0"
 totalFruits.Size = UDim2.new(1, 0, 0, 20)
 totalFruits.Position = UDim2.new(0, 0, 0, 25)
 totalFruits.BackgroundTransparency = 1
@@ -48,6 +49,7 @@ totalFruits.TextScaled = true
 totalFruits.Parent = frame
 
 local nearestFruit = Instance.new("TextLabel")
+nearestFruit.Text = "🍎 Nearest: None"
 nearestFruit.Size = UDim2.new(1, 0, 0, 20)
 nearestFruit.Position = UDim2.new(0, 0, 0, 50)
 nearestFruit.BackgroundTransparency = 1
@@ -57,6 +59,7 @@ nearestFruit.TextScaled = true
 nearestFruit.Parent = frame
 
 local distanceLabel = Instance.new("TextLabel")
+distanceLabel.Text = "🔍 Distance: 0 studs"
 distanceLabel.Size = UDim2.new(1, 0, 0, 20)
 distanceLabel.Position = UDim2.new(0, 0, 0, 75)
 distanceLabel.BackgroundTransparency = 1
@@ -76,7 +79,7 @@ local fruitsList = {
     "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
 }
 
--- Function to update the UI
+-- Function to find fruits
 local function updateFruitInfo()
     while true do
         local total = 0
@@ -86,7 +89,7 @@ local function updateFruitInfo()
 
         if playerPos then
             for _, fruitName in ipairs(fruitsList) do
-                local fruit = workspace:FindFirstChild(fruitName)
+                local fruit = Workspace:FindFirstChild(fruitName)
                 if fruit and fruit:FindFirstChild("Handle") then
                     total = total + 1
                     local fruitPos = fruit.Handle.Position
@@ -105,9 +108,9 @@ local function updateFruitInfo()
         nearestFruit.Text = "🍎 Nearest: " .. nearestFruitName
         distanceLabel.Text = "🔍 Distance: " .. math.floor(nearestDistance) .. " studs"
 
-        task.wait(0.04) -- Updates every 0.04 seconds
+        task.wait(0.04) -- Update every 0.04 seconds
     end
 end
 
--- Run the update function in a separate thread after UI loads
+-- Start updating in a separate thread
 task.spawn(updateFruitInfo)
