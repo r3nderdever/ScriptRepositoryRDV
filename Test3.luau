@@ -8,9 +8,10 @@ local TweenService = game:GetService("TweenService")
 
 -- Variables
 local plr = Players.LocalPlayer
+local timer = 3
 local Config = { AutoStoreFruit = true }
 local fruitsList = {
-    "Fruit ", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
+    "Fruit", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
     "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit",
     "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit",
     "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
@@ -107,16 +108,43 @@ local function GetNearestFruit()
     return nearestFruit, nearestDistance
 end
 
+-- Noclip function
+local function EnableNoclip()
+    for _, part in ipairs(plr.Character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+        end
+    end
+end
+
+local function DisableNoclip()
+    for _, part in ipairs(plr.Character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = true
+        end
+    end
+end
+
 -- Move Towards Nearest Fruit
 local function MoveTowardsFruit()
-    while task.wait(0.06) do
+    while task.wait(0.03) do
         if plr.Team == game.Teams.Marines then
             fruitLabel.Text = "Fruit Finder Active"
             local nearestFruit, distance = GetNearestFruit()
             if nearestFruit and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
                 local hrp = plr.Character.HumanoidRootPart
-                local direction = (nearestFruit.Handle.Position - hrp.Position).unit
-                hrp.CFrame = CFrame.new(hrp.Position + direction * 121)
+                if distance <= 50 then
+                    hrp.CFrame = CFrame.new(nearestFruit.Handle.Position)
+                else
+                    local direction = (nearestFruit.Handle.Position - hrp.Position).unit
+                    hrp.CFrame = CFrame.new(hrp.Position + direction * 5)
+                end
+                
+                if distance > 20 then
+                    EnableNoclip()
+                else
+                    DisableNoclip()
+                end
                 
                 local waterBase = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("WaterBase-Plane")
                 if waterBase and (hrp.Position - waterBase.Position).Magnitude <= 5 then
@@ -125,14 +153,12 @@ local function MoveTowardsFruit()
                 
                 fruitLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
             else
+                task.wait(1)
                 if not GetNearestFruit() then
-                    task.wait(2)
                     local success, response = pcall(function()
                         local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-                        if servers.data and #servers.data > 0 then
-                            local server = servers.data[math.random(1, #servers.data)]
-                            if server then TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id) end
-                        end
+                        local server = servers.data[math.random(1, #servers.data)]
+                        if server then TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id) end
                     end)
                     if not success then warn("Server hop failed: " .. response) end
                 end
