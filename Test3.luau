@@ -1,5 +1,5 @@
 repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer
-task.wait(7) -- Wait 2 seconds after loading
+task.wait(3) -- Wait 3 seconds after loading
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -190,7 +190,7 @@ task.spawn(function()
                 end
             else
                 StatusLabel.Text = "No fruit found... Server hopping soon."
-                task.wait(3)
+                task.wait(6)
                 Teleport() -- Call the improved server hop function
             end
         end)
