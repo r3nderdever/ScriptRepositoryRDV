@@ -8,13 +8,16 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
-local function JoinTeam()
-    if plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates then
-        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
+-- Auto-Join Marines Team
+local function joinMarines()
+    local teams = game:GetService("Teams")
+    local marinesTeam = teams:FindFirstChild("Marines")
+    if marinesTeam then
+        player.Team = marinesTeam
     end
 end
 
-JoinTeam()
+joinMarines()
 
 -- UI Setup
 local screenGui = Instance.new("ScreenGui")
@@ -40,7 +43,7 @@ fruitLabel.Parent = frame
 
 -- List of fruits
 local fruitsList = {
-    "Fruit", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
+    "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
     "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit",
     "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit",
     "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
@@ -55,24 +58,14 @@ local function findNearestFruit()
     local minDistance = math.huge
     local fruitCount = 0
     
-    for _, fruitName in ipairs(fruitsList) do
-        for _, fruit in ipairs(Workspace:GetChildren()) do
-            if fruit.Name == fruitName and fruit:FindFirstChild("Handle") then
-                local distance = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
-                fruitCount = fruitCount + 1
-                
-                if distance < minDistance then
-                    minDistance = distance
-                    nearestFruit = fruit
-                end
-                
-                -- Highlighting fruit through walls
-                local highlight = fruit:FindFirstChild("Highlight") or Instance.new("Highlight")
-                highlight.Parent = fruit
-                highlight.FillColor = Color3.fromRGB(255, 255, 0)
-                highlight.FillTransparency = 0.3 -- Reduced transparency for better visibility
-                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                highlight.OutlineTransparency = 0
+    for _, fruit in ipairs(Workspace:GetChildren()) do
+        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+            local distance = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
+            fruitCount = fruitCount + 1
+            
+            if distance < minDistance then
+                minDistance = distance
+                nearestFruit = fruit
             end
         end
     end
@@ -80,12 +73,13 @@ local function findNearestFruit()
     return nearestFruit, minDistance, fruitCount
 end
 
--- Update UI every 0.06 seconds
-RunService.RenderStepped:Connect(function()
+-- Update UI every 0.05 seconds
+while true do
     local nearestFruit, distance, fruitCount = findNearestFruit()
     if nearestFruit then
         fruitLabel.Text = "🍏 Nearest: " .. nearestFruit.Name .. " | 📏 Distance: " .. math.floor(distance) .. "m\n🍎 Total Fruits: " .. fruitCount
     else
         fruitLabel.Text = "❌ No fruits found"
     end
-end)
+    task.wait(0.05) -- Updated interval to 0.05 seconds
+end
