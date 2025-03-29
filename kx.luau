@@ -1,89 +1,97 @@
-local function setupRagdoll(Character)
-    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
-    if not Humanoid or Humanoid.RigType ~= Enum.HumanoidRigType.R6 then return end
+--> Perfect R6 Ragdoll by CompletedLoop
+--> Modified for LocalScript in StarterCharacterScripts
+local Character = script.Parent
+local Humanoid = Character:WaitForChild("Humanoid")
+local Torso = Character:WaitForChild("Torso")
 
-    -- Prevent Roblox from breaking joints on death
-    Humanoid.BreakJointsOnDeath = false
-
-    local ragdollJoints = {}
-
-    -- Function to enable ragdoll
-    local function enableRagdoll()
-        for _, Part in ipairs(Character:GetChildren()) do
-            if Part:IsA("BasePart") then
-                local Motor6D = Part:FindFirstChildWhichIsA("Motor6D")
-                if Motor6D then
-                    local Part0, Part1 = Motor6D.Part0, Motor6D.Part1
-                    if Part0 and Part1 then
-                        if Part.Name ~= "Head" then
-                            -- Create physics-based BallSocketConstraint
-                            local BallSocket = Instance.new("BallSocketConstraint")
-                            local Attachment1 = Instance.new("Attachment")
-                            local Attachment2 = Instance.new("Attachment")
-
-                            Attachment1.CFrame = Motor6D.C0
-                            Attachment2.CFrame = Motor6D.C1
-                            Attachment1.Parent = Part0
-                            Attachment2.Parent = Part1
-
-                            BallSocket.Attachment0 = Attachment1
-                            BallSocket.Attachment1 = Attachment2
-                            BallSocket.Parent = Part1
-
-                            -- Store original joint for later restoration
-                            ragdollJoints[Part1] = { Motor6D, BallSocket }
-
-                            -- Remove the Motor6D joint
-                            Motor6D:Destroy()
-                        else
-                            -- Keep the head attached using a WeldConstraint
-                            local WeldConstraint = Instance.new("WeldConstraint")
-                            WeldConstraint.Part0 = Part0
-                            WeldConstraint.Part1 = Part1
-                            WeldConstraint.Parent = Part1
-
-                            -- Store for restoration
-                            ragdollJoints[Part1] = { Motor6D, WeldConstraint }
-                            Motor6D:Destroy()
-                        end
-                    end
-                end
-            end
-        end
-        Humanoid.PlatformStand = true -- Disable movement
-    end
-
-    -- Function to disable ragdoll and restore original joints
-    local function disableRagdoll()
-        for Part, data in pairs(ragdollJoints) do
-            local OriginalMotor6D, Constraint = data[1], data[2]
-            if Constraint then Constraint:Destroy() end -- Remove BallSocket or Weld
-            if OriginalMotor6D then -- Restore original Motor6D joint
-                local NewMotor6D = Instance.new("Motor6D")
-                NewMotor6D.Part0 = OriginalMotor6D.Part0
-                NewMotor6D.Part1 = Part
-                NewMotor6D.C0 = OriginalMotor6D.C0
-                NewMotor6D.C1 = OriginalMotor6D.C1
-                NewMotor6D.Parent = Part
-            end
-        end
-        Humanoid.PlatformStand = false -- Restore movement
-        ragdollJoints = {} -- Clear stored joints
-    end
-
-    -- Detect when the player takes damage
-    local lastHealth = Humanoid.Health
-    Humanoid.HealthChanged:Connect(function(newHealth)
-        if newHealth < lastHealth then -- Only trigger when damaged
-            enableRagdoll() -- Make player fall over
-            task.wait(2) -- Wait for 2 seconds
-            disableRagdoll() -- Restore character control
-        end
-        lastHealth = newHealth -- Update health tracker
-    end)
+--> Ensure script runs only when character is fully loaded
+if not Character:IsDescendantOf(game.Players.LocalPlayer.Character) then
+	return
 end
 
--- Apply to all players
-game:GetService("Players").PlayerAdded:Connect(function(Player)
-    Player.CharacterAdded:Connect(setupRagdoll)
+--> Necessary for Ragdolling
+Humanoid.BreakJointsOnDeath = false
+Humanoid.RequiresNeck = false
+
+--> Store CFrame offsets for best-looking ragdoll
+local attachmentCFrames = {
+	["Neck"] = {CFrame.new(0, 1, 0), CFrame.new(0, -0.5, 0)},
+	["Left Shoulder"] = {CFrame.new(-1.3, 0.75, 0), CFrame.new(0.2, 0.75, 0)},
+	["Right Shoulder"] = {CFrame.new(1.3, 0.75, 0), CFrame.new(-0.2, 0.75, 0)},
+	["Left Hip"] = {CFrame.new(-0.5, -1, 0), CFrame.new(0, 1, 0)},
+	["Right Hip"] = {CFrame.new(0.5, -1, 0), CFrame.new(0, 1, 0)},
+}
+
+--> Create the "IsRagdoll" BoolValue
+local RagdollValue = Instance.new("BoolValue")
+RagdollValue.Name = "IsRagdoll"
+RagdollValue.Parent = Character
+
+--> Allows proper limb collisions
+local function createColliderPart(part)
+	if not part then return end
+	local rp = Instance.new("Part")
+	rp.Name = "ColliderPart"
+	rp.Size = part.Size / 1.7
+	rp.Massless = true
+	rp.CFrame = part.CFrame
+	rp.Transparency = 1
+
+	local wc = Instance.new("WeldConstraint")
+	wc.Part0 = rp
+	wc.Part1 = part
+	wc.Parent = rp
+	rp.Parent = part
+end
+
+--> Converts Motor6D to BallSocketConstraints
+local function replaceJoints()
+	for _, motor in pairs(Character:GetDescendants()) do
+		if motor:IsA("Motor6D") and attachmentCFrames[motor.Name] then
+			motor.Enabled = false
+			local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+			a0.CFrame = attachmentCFrames[motor.Name][1]
+			a1.CFrame = attachmentCFrames[motor.Name][2]
+			a0.Name = "RagdollAttachment"
+			a1.Name = "RagdollAttachment"
+
+			createColliderPart(motor.Part1)
+
+			local b = Instance.new("BallSocketConstraint")
+			b.Attachment0 = a0
+			b.Attachment1 = a1
+			b.Name = "RagdollConstraint"
+			b.LimitsEnabled = true
+			b.UpperAngle = 90
+
+			a0.Parent = motor.Part0
+			a1.Parent = motor.Part1
+			b.Parent = motor.Parent
+		end
+	end
+	Humanoid.AutoRotate = false
+end
+
+--> Reset Joints
+local function resetJoints()
+	if Humanoid.Health < 1 then return end
+	for _, instance in pairs(Character:GetDescendants()) do
+		if instance:IsA("Motor6D") then
+			instance.Enabled = true
+		elseif instance.Name == "RagdollConstraint" or instance.Name == "ColliderPart" then
+			instance:Destroy()
+		end
+	end
+	Humanoid.AutoRotate = true
+end
+
+--> Trigger Ragdoll
+local function Ragdoll(value)
+	if value then replaceJoints() else resetJoints() end
+end
+
+--> Connect Events
+RagdollValue.Changed:Connect(Ragdoll)
+Humanoid.Died:Once(function()
+	RagdollValue.Value = true
 end)
