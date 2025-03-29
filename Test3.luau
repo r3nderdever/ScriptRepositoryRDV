@@ -9,8 +9,7 @@ local HttpService = game:GetService("HttpService")
 local plr = Players.LocalPlayer
 local webhookURL = "https://discord.com/api/webhooks/1332763994758316172/ya0sKT_D0t-iGSxH9pGyQOtYdIIa1Ekq1DrS3zbCN68MbFlw_fl1A64kRRYWCGcIZNV3"
 
-local serverHopDelay = 5 -- Delay before retrying if no different server is found
-local serverHopTimer = 4 -- Time until server hop when no fruit is found
+local serverHopDelay = 0.3 -- Delay before retrying
 local teleportSpeed = 178 -- Studs per second
 local teleportInterval = 0.002 -- Seconds per step
 local instantTeleportRadius = 50 -- Studs
@@ -99,31 +98,35 @@ local function MoveTowardsFruit()
                 hrp.CFrame = hrp.CFrame + direction * stepSize
             end
         else
-            if tick() - lastFruitTime >= serverHopTimer then
-                ServerHop()
-            end
+            ServerHop()
         end
     end
 end
 
---// Random Server Hop System
+--// Advanced Random Server Hop System (Only Joins Servers with 5-11 Players)
 local function ServerHop()
     local currentServerId = game.JobId
     local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?limit=100"))
 
     if servers and servers.data then
+        local validServers = {}
+
         for _, server in ipairs(servers.data) do
-            if server.id ~= currentServerId then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
-                return
+            if server.id ~= currentServerId and server.playing >= 5 and server.playing <= 11 then
+                table.insert(validServers, server.id)
             end
         end
-    end
-end
 
---// Server Hop Timer
-local function CheckForServerHop()
-    if tick() - lastFruitTime >= serverHopTimer then
+        if #validServers > 0 then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, validServers[math.random(1, #validServers)])
+        else
+            print("[⚠] No suitable servers found, retrying...")
+            task.wait(serverHopDelay)
+            ServerHop()
+        end
+    else
+        print("[❌] Failed to fetch servers, retrying...")
+        task.wait(serverHopDelay)
         ServerHop()
     end
 end
@@ -132,7 +135,7 @@ end
 task.spawn(MoveTowardsFruit)
 task.spawn(function()
     while task.wait(serverHopDelay) do
-        CheckForServerHop()
+        ServerHop()
     end
 end)
 
