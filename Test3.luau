@@ -117,7 +117,7 @@ local function MoveTowardsFruit()
             if nearestFruit and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
                 local hrp = plr.Character.HumanoidRootPart
                 local direction = (nearestFruit.Handle.Position - hrp.Position).unit
-                hrp.CFrame = CFrame.new(hrp.Position + direction * 1)
+                hrp.CFrame = CFrame.new(hrp.Position + direction * 11)
                 fruitLabel.Text = "Found: " .. nearestFruit.Name .. " | Distance: " .. math.floor(distance)
             end
         else
