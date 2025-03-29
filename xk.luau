@@ -1,143 +1,84 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+
 local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local humRoot = char:WaitForChild("HumanoidRootPart")
 
--- Ensure we get the player's character
-local function getCharacter()
-    return player.Character or player.CharacterAdded:Wait()
-end
-
--- Create GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
-screenGui.ResetOnSpawn = false
 
--- Function to create a button
-local function createButton(size, position, parent)
+-- Function to create buttons
+local function createButton(text, pos, size)
     local button = Instance.new("TextButton")
-    button.Parent = parent
+    button.Parent = screenGui
     button.Size = size
-    button.Position = position
-    button.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    button.Text = ""
+    button.Position = pos
+    button.Text = text
+    button.BackgroundColor3 = Color3.new(0, 0, 0)
+    button.TextColor3 = Color3.new(1, 1, 1)
     button.BorderSizePixel = 0
-    button.AutoButtonColor = false
-
-    -- Rounded corners
-    local uicorner = Instance.new("UICorner", button)
-    uicorner.CornerRadius = UDim.new(0.3, 0)
-
-    -- White outline
-    local outline = Instance.new("UIStroke", button)
-    outline.Thickness = 2
-    outline.Color = Color3.fromRGB(255, 255, 255)
-
-    -- Glow effect
-    local glow = Instance.new("ImageLabel", button)
-    glow.Size = UDim2.new(1.6, 0, 1.6, 0)
-    glow.Position = UDim2.new(-0.3, 0, -0.3, 0)
-    glow.BackgroundTransparency = 1
-    glow.Image = "rbxassetid://4996891970"
-    glow.ImageColor3 = Color3.fromRGB(255, 255, 255)
-    glow.ImageTransparency = 0.7
-
+    button.BackgroundTransparency = 0.2
+    button.Font = Enum.Font.SourceSansBold
+    button.TextScaled = true
+    button.AutoButtonColor = true
+    button.ClipsDescendants = true
+    button.CornerRadius = UDim.new(0, 20)
+    
     return button
 end
 
--- Create main teleport button
-local teleportButton = createButton(UDim2.new(0, 80, 0, 80), UDim2.new(1, -100, 0.5, -40), screenGui)
+local mainButton = createButton("Teleport", UDim2.new(0.4, 0, 0.8, 0), UDim2.new(0.15, 0, 0.1, 0))
+local fastButton = createButton("Flash Move", UDim2.new(0.56, 0, 0.8, 0), UDim2.new(0.1, 0, 0.1, 0))
 
--- Create rapid teleport button
-local rapidTeleportButton = createButton(UDim2.new(0, 50, 0, 50), UDim2.new(1, -90, 0.5, 50), screenGui)
-
--- Function to create a fading shadow clone (with same position & rotation)
-local function createShadowClone(position, rotation)
-    local char = getCharacter()
-    if not char then return end
-
+-- Function to create a fading shadow clone
+local function createShadowClone()
     local clone = char:Clone()
-    clone.Parent = game.Workspace
+    clone.Parent = workspace
     clone.Name = "ShadowClone"
 
-    -- Modify clone appearance
-    for _, obj in ipairs(clone:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            obj.Material = Enum.Material.SmoothPlastic
-            obj.Color = Color3.new(0, 0, 0) -- Black
-            obj.Transparency = 0.3
-            obj.Anchored = true
-            obj.CanCollide = false
-            obj.CFrame = CFrame.new(position) * rotation -- Set clone's exact position & rotation
-        elseif obj:IsA("Decal") or obj:IsA("Texture") then
-            obj:Destroy()
-        elseif obj:IsA("Script") then
-            obj:Destroy()
+    for _, part in pairs(clone:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.Transparency = 0.5
+            part.Material = Enum.Material.SmoothPlastic
         end
     end
 
-    -- Fade out over 1 second
-    local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    for _, obj in ipairs(clone:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            local tween = TweenService:Create(obj, tweenInfo, { Transparency = 1 })
+    -- Tween to fade out
+    local tweenInfo = TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+    for _, part in pairs(clone:GetChildren()) do
+        if part:IsA("BasePart") then
+            local tween = TweenService:Create(part, tweenInfo, {Transparency = 1})
             tween:Play()
         end
     end
 
-    -- Destroy clone after tween ends
-    task.delay(1, function() clone:Destroy() end)
+    -- Remove clone after 2 seconds
+    game:GetService("Debris"):AddItem(clone, 2)
 end
 
--- Function for rapid teleporting 14 times over 1.3 seconds (random left/right)
-local function rapidTeleport()
-    local char = getCharacter()
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    local camera = game.Workspace.CurrentCamera
+-- Function to teleport in a circle
+local function circleTeleport()
+    local angle = math.rad(math.random(0, 360))
+    local newX = humRoot.Position.X + math.cos(angle) * 24
+    local newZ = humRoot.Position.Z + math.sin(angle) * 24
+    local newPosition = Vector3.new(newX, humRoot.Position.Y, newZ)
 
-    if hrp and camera then
-        local lockedCameraCFrame = camera.CFrame
-        camera.CameraType = Enum.CameraType.Scriptable
-        camera.CFrame = lockedCameraCFrame
+    createShadowClone()
+    humRoot.CFrame = CFrame.new(newPosition)
+end
 
-        for i = 1, 14 do
-            task.delay((i - 1) * (1.3 / 14), function()
-                if hrp then
-                    -- Save the starting position & rotation
-                    local startPosition = hrp.Position
-                    local startRotation = hrp.CFrame - hrp.Position
-
-                    -- Create a shadow clone at the current position before teleporting
-                    createShadowClone(startPosition, startRotation)
-
-                    -- Generate a random left/right teleport offset (-20 to 20)
-                    local randomOffset = math.random(-20, 20)
-
-                    -- Move the player to the new position
-                    hrp.CFrame = hrp.CFrame * CFrame.new(randomOffset, 0, -4) -- Move forward 4 studs
-
-                    -- Save new position & rotation
-                    local endPosition = hrp.Position
-                    local endRotation = hrp.CFrame - hrp.Position
-
-                    -- Create another shadow clone at the new position
-                    createShadowClone(endPosition, endRotation)
-                end
-            end)
-        end
-
-        -- Tween camera back to player after 1.3 seconds
-        task.delay(1.3, function()
-            local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-            local tween = TweenService:Create(camera, tweenInfo, { CFrame = CFrame.lookAt(camera.CFrame.Position, hrp.Position) })
-            tween:Play()
-
-            tween.Completed:Connect(function()
-                camera.CameraType = Enum.CameraType.Custom
-            end)
-        end)
+-- Function for fast left-right teleportation
+local function fastTeleport()
+    for i = 1, 20 do
+        task.wait(0.05)
+        createShadowClone()
+        local offset = math.random(-20, 20)
+        humRoot.CFrame = humRoot.CFrame * CFrame.new(offset, 0, -1.5)
     end
 end
 
--- Connect buttons
-rapidTeleportButton.MouseButton1Click:Connect(rapidTeleport)
+mainButton.MouseButton1Click:Connect(circleTeleport)
+fastButton.MouseButton1Click:Connect(fastTeleport)
