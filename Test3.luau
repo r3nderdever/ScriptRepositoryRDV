@@ -7,6 +7,17 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local plr = Players.LocalPlayer
 
+-- List of fruits to target
+local TargetFruits = {
+    "Fruit ", "Rocket Fruit", "Spin Fruit", "Chop Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit",
+    "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit",
+    "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit",
+    "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
+    "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit",
+    "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit",
+    "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"
+}
+
 -- Auto-Join Marines Team
 local function JoinMarines()
     if plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates then
@@ -17,7 +28,7 @@ JoinMarines()
 
 -- Function to store fruit
 local function StoreFruit(tool)
-    if tool:IsA("Tool") and tool.Name:find("Fruit") then
+    if tool:IsA("Tool") and table.find(TargetFruits, tool.Name) then
         ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", tool:GetAttribute("OriginalName"), tool)
     end
 end
@@ -76,11 +87,11 @@ end
 
 local StatusLabel = CreateUI()
 
--- Find the nearest fruit
+-- Find the nearest targeted fruit
 local function FindNearestFruit()
     local nearestFruit, nearestDistance
     for _, v in ipairs(workspace:GetChildren()) do
-        if v:IsA("Tool") and v.Name:find("Fruit") then
+        if v:IsA("Tool") and table.find(TargetFruits, v.Name) then
             local distance = (plr.Character.HumanoidRootPart.Position - v.Handle.Position).magnitude
             if not nearestFruit or distance < nearestDistance then
                 nearestFruit, nearestDistance = v, distance
@@ -116,4 +127,4 @@ task.spawn(function()
     end
 end)
 
-print("✅ Final Script Loaded: Auto Fruit Store, Marines Join, Server Hop, & UI")
+print("✅ Final Script Loaded: Auto Fruit Store, Marines Join, Server Hop, & UI with Targeted Fruits")
