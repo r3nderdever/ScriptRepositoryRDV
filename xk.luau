@@ -5,12 +5,9 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local root = character:WaitForChild("HumanoidRootPart")
 
-local TELEPORT_RADIUS = 17
-local DETECTION_RADIUS = 15
-local FADE_TIME = 1
-
--- Store the player's original orientation
-local originalCFrame = root.CFrame
+local TELEPORT_RADIUS = 18
+local DETECTION_RADIUS = 16
+local FADE_TIME = 2
 
 -- Function to get all nearby players
 local function getNearbyPlayers()
@@ -77,9 +74,6 @@ while true do
     task.wait(0.2) -- Check every 0.2 seconds
     if #getNearbyPlayers() > 0 then
         createClone()
-        
-        -- Teleport the player to a new position
-        local newPosition = getRandomPositionAround(root.Position, TELEPORT_RADIUS)
-        root.CFrame = CFrame.new(newPosition.X, newPosition.Y, newPosition.Z, originalCFrame.LookVector.X, originalCFrame.LookVector.Y, originalCFrame.LookVector.Z, 0, 1, 0)
+        root.CFrame = CFrame.new(getRandomPositionAround(root.Position, TELEPORT_RADIUS))
     end
 end
