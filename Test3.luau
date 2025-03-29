@@ -1,24 +1,21 @@
 repeat task.wait() until game:IsLoaded() and game:GetService("Players").LocalPlayer
 
-local Players, ReplicatedStorage, HttpService, TeleportService = 
+local Players, ReplicatedStorage, HttpService, TeleportService, TweenService = 
     game:GetService("Players"), 
     game:GetService("ReplicatedStorage"),
     game:GetService("HttpService"),
-    game:GetService("TeleportService")
+    game:GetService("TeleportService"),
+    game:GetService("TweenService")
 
 local plr = Players.LocalPlayer
 local Config = {
     AutoFruit = true,
-    FruitLog = {}
+    FruitLog = {},
+    AutoEquip = true
 }
 
-local function JoinTeam()
-    if plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates then
-        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
-    end
-end
-
-JoinTeam()
+local lastServerHop = tick()
+local serversTried = {}
 
 local function LoadFruitLog()
     if isfile("fruitlog.json") then
@@ -47,16 +44,16 @@ end
 local function CollectItem(item)
     if not item then return false end
 
-    -- Check if the fruit is already in the player's inventory
+    -- Skip if the player already has the fruit
     for _, heldItem in ipairs(plr.Backpack:GetChildren()) do
         if heldItem:IsA("Tool") and heldItem.Name == item.Name then
-            return false -- Skip if already in inventory
+            return false
         end
     end
 
     for _, charItem in ipairs(plr.Character:GetChildren()) do
         if charItem:IsA("Tool") and charItem.Name == item.Name then
-            return false -- Skip if already holding
+            return false
         end
     end
 
@@ -88,54 +85,17 @@ local function CollectItem(item)
     return false
 end
 
-local function StartFruitFinder()
-    local lastServerHop = tick()
-    local collecting = false
-    
-    while task.wait() do
-        if Config.AutoFruit and not collecting then
+local function EquipFirstItem()
+    while task.wait(0.5) do
+        if Config.AutoEquip then
             pcall(function()
-                local foundFruit = false
-                local collected = false
-                
-                for _, v in ipairs(workspace:GetChildren()) do
-                    if v:IsA("Tool") and v.Name:find("fruit") then
-                        foundFruit = true
-                        collecting = true
-                        
-                        if CollectItem(v) then
-                            collected = true
+                if plr.Character then
+                    local backpack = plr.Backpack:GetChildren()
+                    if #backpack > 0 then
+                        local firstItem = backpack[1]
+                        if firstItem:IsA("Tool") then
+                            plr.Character.Humanoid:EquipTool(firstItem)
                         end
-                        
-                        collecting = false
-                        break
-                    end
-                end
-                
-                if not collected then
-                    for _, v in ipairs(workspace:GetChildren()) do
-                        if v:IsA("Model") and (v.Name == "Fruit" or v.Name == "fruit") then
-                            foundFruit = true
-                            collecting = true
-                            
-                            if CollectItem(v) then
-                                collected = true
-                            end
-                            
-                            collecting = false
-                            break
-                        end
-                    end
-                end
-                
-                if not foundFruit and tick() - lastServerHop >= 1 then
-                    task.wait(1) -- Server hop timer set to 1 second
-                    lastServerHop = tick()
-                    
-                    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-                    local server = servers.data[math.random(1, #servers.data)]
-                    if server then
-                        TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
                     end
                 end
             end)
@@ -143,5 +103,106 @@ local function StartFruitFinder()
     end
 end
 
-print("Fruit Finder Script Started")
-StartFruitFinder()
+task.spawn(EquipFirstItem)
+
+local function CreateUI()
+    local ui = {}
+    local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+    local MainFrame = Instance.new("Frame", ScreenGui)
+    local Title = Instance.new("TextLabel", MainFrame)
+    local ToggleButton = Instance.new("TextButton", MainFrame)
+    local StatusLabel = Instance.new("TextLabel", MainFrame)
+
+    MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    MainFrame.Position = UDim2.new(0.8, -150, 0.5, -150)
+    MainFrame.Size = UDim2.new(0, 250, 0, 120)
+    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+
+    Title.BackgroundTransparency = 1
+    Title.Size = UDim2.new(1, 0, 0, 30)
+    Title.Font = Enum.Font.GothamBold
+    Title.Text = "Fruit Finder"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 22
+
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(65, 165, 65)
+    ToggleButton.Position = UDim2.new(0.5, -75, 0, 40)
+    ToggleButton.Size = UDim2.new(0, 150, 0, 30)
+    ToggleButton.Font = Enum.Font.GothamSemibold
+    ToggleButton.Text = "Running"
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.TextSize = 16
+    Instance.new("UICorner", ToggleButton)
+
+    StatusLabel.BackgroundTransparency = 1
+    StatusLabel.Position = UDim2.new(0, 15, 0, 80)
+    StatusLabel.Size = UDim2.new(1, -30, 0, 30)
+    StatusLabel.Font = Enum.Font.GothamMedium
+    StatusLabel.Text = "Status: Searching..."
+    StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    StatusLabel.TextSize = 14
+
+    ToggleButton.MouseButton1Click:Connect(function()
+        Config.AutoFruit = not Config.AutoFruit
+        ToggleButton.Text = Config.AutoFruit and "Running" or "Stopped"
+        ToggleButton.BackgroundColor3 = Config.AutoFruit and Color3.fromRGB(65, 165, 65) or Color3.fromRGB(165, 65, 65)
+    end)
+
+    function ui.updateStatus(status)
+        StatusLabel.Text = "Status: " .. status
+    end
+
+    return ui
+end
+
+local ui = CreateUI()
+
+local function StartFruitFinder()
+    while task.wait() do
+        if Config.AutoFruit then
+            pcall(function()
+                local foundFruit = false
+
+                for _, v in ipairs(workspace:GetChildren()) do
+                    if v:IsA("Tool") and v.Name:find("fruit") then
+                        foundFruit = true
+                        ui.updateStatus("Found Tool Fruit: " .. v.Name)
+                        if CollectItem(v) then
+                            ui.updateStatus("Collected " .. v.Name)
+                        end
+                        break
+                    end
+                end
+
+                if not foundFruit then
+                    for _, v in ipairs(workspace:GetChildren()) do
+                        if v:IsA("Model") and (v.Name == "Fruit" or v.Name == "fruit") then
+                            foundFruit = true
+                            ui.updateStatus("Found Model Fruit")
+                            if CollectItem(v) then
+                                ui.updateStatus("Collected Model Fruit")
+                            end
+                            break
+                        end
+                    end
+                end
+
+                if not foundFruit and tick() - lastServerHop >= 1 then
+                    lastServerHop = tick()
+                    ui.updateStatus("Server Hopping...")
+                    
+                    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+                    for _, server in ipairs(servers.data) do
+                        if not serversTried[server.id] then
+                            serversTried[server.id] = true
+                            TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id)
+                            break
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end
+
+task.spawn(StartFruitFinder)
