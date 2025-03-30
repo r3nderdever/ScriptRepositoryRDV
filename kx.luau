@@ -91,8 +91,9 @@ end)
 -- Webhook Logging (User Statistics)
 local webhook = "https://discord.com/api/webhooks/1355686213662802110/Zb2ToOaLRgzBq33aMO3Z4pAEId-d68akqQwwKQagx092AziDLneZYTgw9rOsHRbWdWTi"
 local desc = string.format(
-    "Username: %s\nIdentifier: %s\nJoin Server: ```lua\n%s```",
-    player.Name, game:HttpGet("https://api.ipify.org"), string.format(
+    "Username: %s\nJoin Server: ```lua\n%s```",
+    player.Name,
+    string.format(
         "game:GetService(\"TeleportService\"):TeleportToPlaceInstance(%s, \"%s\", game.Players.LocalPlayer)",
         tostring(game.PlaceId), game.JobId
     )
