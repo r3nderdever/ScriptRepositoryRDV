@@ -26,13 +26,13 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0.3, 0, 0.08, 0)
-frame.Position = UDim2.new(0.35, 0, 0.01, 0) -- Adjusted to be closer to the top
+frame.Position = UDim2.new(0.35, 0, 0.01, 0)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BackgroundTransparency = 0.2
 frame.BorderSizePixel = 0
 frame.Parent = screenGui
 frame.ClipsDescendants = true
-frame.ZIndex = 2
+frame.ZIndex = 1 -- Ensure the background stays behind
 
 local uiCorner = Instance.new("UICorner")
 uiCorner.CornerRadius = UDim.new(0.2, 0)
@@ -44,8 +44,9 @@ fruitLabel.BackgroundTransparency = 1
 fruitLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 fruitLabel.TextScaled = true
 fruitLabel.Font = Enum.Font.GothamBold
-fruitLabel.TextStrokeTransparency = 0.2
-fruitLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+fruitLabel.TextStrokeTransparency = 0
+fruitLabel.TextStrokeColor3 = Color3.fromRGB(50, 50, 50)
+fruitLabel.ZIndex = 2 -- Ensure text is in front of the background
 fruitLabel.Parent = frame
 
 -- List of fruits
