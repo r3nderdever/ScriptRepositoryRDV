@@ -15,3 +15,11 @@ for the Test - Test1
 loadstring(game:HttpGet("https://raw.githubusercontent.com/r3nderdever/ScriptRepositoryRDV/refs/heads/main/Test.luau"))()
 
 loadstring(game:HttpGet("https://raw.githubusercontent.com/r3nderdever/ScriptRepositoryRDV/refs/heads/main/Test2.luau"))()
+
+
+UPD - Script Kx is a fruit notifier - for blox fruits!
+All my 100% working and useful scripts will be posted on...
+Rscripts.net
+!!
+
+
