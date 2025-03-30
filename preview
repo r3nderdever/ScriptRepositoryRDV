@@ -14,59 +14,83 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0.24, 0, 0.1, 0) -- Slightly smaller
-frame.Position = UDim2.new(0.38, 0, 0.005, 0) -- Higher up for better visibility
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.BackgroundTransparency = 0.25 -- Glass effect
+frame.Size = UDim2.new(0.45, 0, 0.22, 0) -- Larger for better visibility
+frame.Position = UDim2.new(0.275, 0, 0.001, 0) -- Pushed to the very top
+frame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+frame.BackgroundTransparency = 0.02 -- Ultra-glass effect
 frame.BorderSizePixel = 0
 frame.Parent = screenGui
 frame.ClipsDescendants = true
 
--- Rounded Corners
+-- Glass Effect (Blur)
+local blurEffect = Instance.new("UIStroke")
+blurEffect.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+blurEffect.Thickness = 8
+blurEffect.Transparency = 0.15
+blurEffect.Color = Color3.fromRGB(255, 255, 255)
+blurEffect.Parent = frame
+
+-- Rounded Corners with Shadow Effect
 local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0.2, 0) -- More rounded edges
+uiCorner.CornerRadius = UDim.new(0.5, 0)
 uiCorner.Parent = frame
+
+local shadow = Instance.new("ImageLabel")
+shadow.Size = UDim2.new(1.4, 0, 1.4, 0)
+shadow.Position = UDim2.new(-0.2, 0, -0.2, 0)
+shadow.BackgroundTransparency = 1
+shadow.Image = "rbxassetid://1316045217"
+shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+shadow.ImageTransparency = 0.5
+shadow.Parent = frame
 
 -- Title Label
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, 0, 0.25, 0)
+titleLabel.Size = UDim2.new(1, 0, 0.2, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextColor3 = Color3.fromRGB(255, 223, 0)
 titleLabel.TextScaled = true
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.Text = "🛠️ Better Fruit Notifier 🛠️"
+titleLabel.Font = Enum.Font.GothamBlack
+titleLabel.Text = "🌟 Supreme Fruit Notifier 🌟"
 titleLabel.Parent = frame
 
 -- Fruit Info Label
 local fruitLabel = Instance.new("TextLabel")
-fruitLabel.Size = UDim2.new(1, -10, 0.7, 0)
-fruitLabel.Position = UDim2.new(0, 5, 0.25, 0)
+fruitLabel.Size = UDim2.new(1, -10, 0.75, 0)
+fruitLabel.Position = UDim2.new(0, 5, 0.22, 0)
 fruitLabel.BackgroundTransparency = 1
 fruitLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 fruitLabel.TextScaled = true
-fruitLabel.Font = Enum.Font.Gotham
+fruitLabel.Font = Enum.Font.GothamMedium
 fruitLabel.Text = "🔍 Searching for fruits..."
 fruitLabel.TextWrapped = true
 fruitLabel.Parent = frame
 
--- Glow Effect
+-- Animated Neon Glow Effect
 local glow = Instance.new("UIStroke")
 glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-glow.Thickness = 2
-glow.Color = Color3.fromRGB(255, 170, 0) -- Default glow
+glow.Thickness = 6
+glow.Color = Color3.fromRGB(0, 255, 255)
 glow.Parent = frame
 
--- Function to find nearest fruit
-local fruitsList = {
-    "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit",
-    "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit", "Sand Fruit",
-    "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit",
-    "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit",
-    "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit",
-    "T-Rex Fruit", "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit",
-    "Rumble Fruit", "Portal Fruit", "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit",
-    "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit"
-}
+-- Smooth Appearance Animation
+frame.BackgroundTransparency = 1
+titleLabel.TextTransparency = 1
+fruitLabel.TextTransparency = 1
+glow.Transparency = 1
+
+local fadeIn = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {BackgroundTransparency = 0.02})
+local fadeInTitle = TweenService:Create(titleLabel, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {TextTransparency = 0})
+local fadeInFruitLabel = TweenService:Create(fruitLabel, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {TextTransparency = 0})
+local fadeInGlow = TweenService:Create(glow, TweenInfo.new(0.5, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Transparency = 0})
+
+fadeIn:Play()
+fadeInTitle:Play()
+fadeInFruitLabel:Play()
+fadeInGlow:Play()
+
+-- Fruit Finding Function
+local fruitsList = {"Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit", "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit", "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit"}
 
 local function findNearestFruit()
     local nearestFruit = nil
@@ -87,23 +111,7 @@ local function findNearestFruit()
     return nearestFruit, minDistance, fruitCount
 end
 
--- Smooth fade-in animation
-frame.BackgroundTransparency = 1
-titleLabel.TextTransparency = 1
-fruitLabel.TextTransparency = 1
-glow.Transparency = 1
-
-local fadeIn = TweenService:Create(frame, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.25})
-local fadeInTitle = TweenService:Create(titleLabel, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0})
-local fadeInFruitLabel = TweenService:Create(fruitLabel, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0})
-local fadeInGlow = TweenService:Create(glow, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 0})
-
-fadeIn:Play()
-fadeInTitle:Play()
-fadeInFruitLabel:Play()
-fadeInGlow:Play()
-
--- Update UI every 0.05 seconds
+-- UI Update Loop
 spawn(function()
     while true do
         local nearestFruit, distance, fruitCount = findNearestFruit()
@@ -111,22 +119,12 @@ spawn(function()
         if nearestFruit then
             fruitLabel.Text = string.format("🍎 Nearest: %s\n🚩 Distance: %dm\n⚡ Fruits Nearby: %d", nearestFruit.Name, math.floor(distance), fruitCount)
             
-            -- Dynamic UI glow color
-            if fruitCount >= 3 then
-                glow.Color = Color3.fromRGB(0, 255, 0) -- Green for many fruits
-            elseif fruitCount == 2 then
-                glow.Color = Color3.fromRGB(255, 255, 0) -- Yellow for a medium amount
-            else
-                glow.Color = Color3.fromRGB(255, 0, 0) -- Red for only one fruit
-            end
-            
-            -- Adjust transparency dynamically
-            local newTransparency = 0.25 - (fruitCount * 0.02) -- More fruits = less transparency
-            frame.BackgroundTransparency = math.clamp(newTransparency, 0.15, 0.25)
+            -- Animated UI glow color based on fruit count
+            local newColor = fruitCount >= 3 and Color3.fromRGB(0, 255, 0) or fruitCount == 2 and Color3.fromRGB(255, 255, 0) or Color3.fromRGB(255, 0, 0)
+            TweenService:Create(glow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.InOut), {Color = newColor}):Play()
         else
             fruitLabel.Text = "❌ No fruits found"
-            glow.Color = Color3.fromRGB(255, 170, 0) -- Default orange glow
-            frame.BackgroundTransparency = 0.25 -- Reset transparency
+            glow.Color = Color3.fromRGB(255, 170, 0)
         end
 
         task.wait(0.05)
