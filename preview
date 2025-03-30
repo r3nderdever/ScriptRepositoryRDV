@@ -2,9 +2,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 -- Player
 local player = Players.LocalPlayer
@@ -16,39 +14,58 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0.3, 0, 0.15, 0)
-frame.Position = UDim2.new(0.35, 0, 0.02, 0) -- Moved upwards
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-frame.BackgroundTransparency = 0.3
+frame.Size = UDim2.new(0.32, 0, 0.18, 0)
+frame.Position = UDim2.new(0.34, 0, 0.02, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BackgroundTransparency = 0.4 -- Frosted Glass Effect
 frame.BorderSizePixel = 0
 frame.Parent = screenGui
-frame.Visible = true
 frame.ClipsDescendants = true
 
+-- Rounded corners for a modern look
 local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0.1, 0)
+uiCorner.CornerRadius = UDim.new(0.2, 0)
 uiCorner.Parent = frame
 
+-- Frosted Glass Blur Effect
+local blurEffect = Instance.new("ImageLabel")
+blurEffect.Size = UDim2.new(1, 0, 1, 0)
+blurEffect.Position = UDim2.new(0, 0, 0, 0)
+blurEffect.BackgroundTransparency = 1
+blurEffect.Image = "rbxassetid://1316045217" -- Glass Blur Texture
+blurEffect.ImageColor3 = Color3.fromRGB(255, 255, 255)
+blurEffect.ImageTransparency = 0.8
+blurEffect.Parent = frame
+
+-- Title Label
 local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, 0, 0.3, 0)
+titleLabel.Size = UDim2.new(1, 0, 0.25, 0)
 titleLabel.BackgroundTransparency = 1
-titleLabel.TextColor3 = Color3.fromRGB(255, 170, 0)
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextScaled = true
-titleLabel.Font = Enum.Font.Cartoon -- Changed to Comic Sans equivalent
-titleLabel.Text = "🌍 Better Fruit Notifier"
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Text = "🛠️ Better Fruit Notifier 🛠️"
 titleLabel.Parent = frame
 
+-- Fruit Info Label
 local fruitLabel = Instance.new("TextLabel")
 fruitLabel.Size = UDim2.new(1, -10, 0.7, 0)
-fruitLabel.Position = UDim2.new(0, 5, 0.3, 0)
+fruitLabel.Position = UDim2.new(0, 5, 0.25, 0)
 fruitLabel.BackgroundTransparency = 1
 fruitLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 fruitLabel.TextScaled = true
-fruitLabel.Font = Enum.Font.Cartoon -- Changed to Comic Sans equivalent
-fruitLabel.TextStrokeTransparency = 0.3
+fruitLabel.Font = Enum.Font.Gotham
+fruitLabel.TextStrokeTransparency = 0.15
 fruitLabel.Text = "🔍 Searching for fruits..."
 fruitLabel.TextWrapped = true
 fruitLabel.Parent = frame
+
+-- Function to create a subtle pulse effect
+local function pulseEffect(obj)
+    local tweenInfo = TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, -1, true)
+    local tween = TweenService:Create(obj, tweenInfo, {TextTransparency = 0.5})
+    tween:Play()
+end
 
 -- Function to find nearest fruit
 local fruitsList = {"Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit", "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit", "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Yeti Fruit"}
@@ -72,15 +89,38 @@ local function findNearestFruit()
     return nearestFruit, minDistance, fruitCount
 end
 
+-- Smooth fade-in animation for UI
+frame.BackgroundTransparency = 1
+titleLabel.TextTransparency = 1
+fruitLabel.TextTransparency = 1
+
+local fadeIn = TweenService:Create(frame, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0.4})
+local fadeInTitle = TweenService:Create(titleLabel, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0})
+local fadeInFruitLabel = TweenService:Create(fruitLabel, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0})
+
+fadeIn:Play()
+fadeInTitle:Play()
+fadeInFruitLabel:Play()
+
 -- Update UI every 0.05 seconds
 spawn(function()
     while true do
         local nearestFruit, distance, fruitCount = findNearestFruit()
+        
         if nearestFruit then
-            fruitLabel.Text = "🍎 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n⚡ Total Fruits: " .. fruitCount
+            fruitLabel.Text = string.format("🍎 Nearest: %s\n🚩 Distance: %dm\n⚡ Fruits Nearby: %d", nearestFruit.Name, math.floor(distance), fruitCount)
+            
+            -- Adjust transparency dynamically
+            local newTransparency = 0.4 - (fruitCount * 0.02) -- More fruits = less transparency
+            frame.BackgroundTransparency = math.clamp(newTransparency, 0.25, 0.4)
         else
             fruitLabel.Text = "❌ No fruits found"
+            frame.BackgroundTransparency = 0.4 -- Reset transparency
         end
+
         task.wait(0.05)
     end
 end)
+
+-- Apply pulse effect to fruit label
+pulseEffect(fruitLabel)
