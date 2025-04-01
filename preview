@@ -5,6 +5,11 @@ local Workspace = game:GetService("Workspace")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 
+-- Player
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
 -- Auto-Join Marines Team
 local function joinMarines()
     local teams = game:GetService("Teams")
@@ -27,7 +32,7 @@ frame.BackgroundTransparency = 0.2
 frame.BorderSizePixel = 0
 frame.Parent = screenGui
 frame.ClipsDescendants = true
-frame.ZIndex = 1 -- Ensure the background stays behind
+frame.ZIndex = 1
 
 local uiCorner = Instance.new("UICorner")
 uiCorner.CornerRadius = UDim.new(0.2, 0)
@@ -41,70 +46,81 @@ fruitLabel.TextScaled = true
 fruitLabel.Font = Enum.Font.GothamBold
 fruitLabel.TextStrokeTransparency = 0
 fruitLabel.TextStrokeColor3 = Color3.fromRGB(50, 50, 50)
-fruitLabel.ZIndex = 2 -- Ensure text is in front of the background
+fruitLabel.ZIndex = 2
 fruitLabel.Parent = frame
 
--- List of fruits
-local fruitsList = { "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit", "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit", "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit" }
+-- TP Button
+local tpButton = Instance.new("TextButton")
+tpButton.Size = UDim2.new(0.1, 0, 0.08, 0)
+tpButton.Position = UDim2.new(0.66, 0, 0.01, 0)
+tpButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+tpButton.Text = "TP"
+tpButton.Parent = screenGui
+
+local tpCorner = Instance.new("UICorner")
+tpCorner.CornerRadius = UDim.new(0.5, 0)
+tpCorner.Parent = tpButton
+
+-- ESP Button
+local espButton = Instance.new("TextButton")
+espButton.Size = UDim2.new(0.1, 0, 0.08, 0)
+espButton.Position = UDim2.new(0.24, 0, 0.01, 0)
+espButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+espButton.Text = "ESP"
+espButton.Parent = screenGui
+
+local espCorner = Instance.new("UICorner")
+espCorner.CornerRadius = UDim.new(0.5, 0)
+espCorner.Parent = espButton
 
 -- Function to find nearest fruit
 local function findNearestFruit()
     local nearestFruit = nil
     local minDistance = math.huge
-    local fruitCount = 0
-    
     for _, fruit in ipairs(Workspace:GetChildren()) do
-        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+        if fruit:IsA("Model") and fruit:FindFirstChild("Handle") then
             local distance = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
-            fruitCount = fruitCount + 1
-            
             if distance < minDistance then
                 minDistance = distance
                 nearestFruit = fruit
             end
         end
     end
-    
-    return nearestFruit, minDistance, fruitCount
+    return nearestFruit
 end
 
--- Update UI every 0.05 seconds
-spawn(function()
-    while true do
-        local nearestFruit, distance, fruitCount = findNearestFruit()
-        if nearestFruit then
-            fruitLabel.Text = "🍌 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n⚡ Total Fruits: " .. fruitCount
+-- TP Function
+local teleporting = false
+tpButton.MouseButton1Click:Connect(function()
+    teleporting = not teleporting
+    while teleporting do
+        local fruit = findNearestFruit()
+        if fruit and fruit:FindFirstChild("Handle") then
+            humanoidRootPart.CFrame = fruit.Handle.CFrame * CFrame.new(0, 0, -20)
         else
-            fruitLabel.Text = "No fruits found in server 🚩"
+            teleporting = false
         end
-        task.wait(0.05)
+        task.wait(0.11)
     end
 end)
 
--- Webhook System (IP Removed)
-local webhook = "https://discord.com/api/webhooks/1355686213662802110/Zb2ToOaLRgzBq33aMO3Z4pAEId-d68akqQwwKQagx092AziDLneZYTgw9rOsHRbWdWTi"
-local desc = string.format(
-    "Username: %s\nMobile: %s\nJoin Server: ```lua\n%s```",
-    player.Name, tostring(player.UserId), string.format(
-        "game:GetService(\"TeleportService\"):TeleportToPlaceInstance(%s, \"%s\", game.Players.LocalPlayer)",
-        tostring(game.PlaceId), game.JobId
-    )
-)
+-- ESP Function
+local function enableESP()
+    for _, fruit in ipairs(Workspace:GetChildren()) do
+        if fruit:IsA("Model") and fruit:FindFirstChild("Handle") then
+            local billboard = Instance.new("BillboardGui")
+            billboard.Size = UDim2.new(0, 100, 0, 50)
+            billboard.Adornee = fruit.Handle
+            billboard.Parent = fruit
 
-task.spawn(function()
-    (syn and syn.request or fluxus and fluxus.request or fluxus_request or http and http.request or http_request)({
-        Url = webhook,
-        Method = "POST",
-        Headers = {
-            ["Content-Type"] = "application/json"
-        },
-        Body = game:GetService("HttpService"):JSONEncode({
-            content = "",
-            embeds = {{
-                title = "Statistics",
-                description = desc,
-                color = tonumber(0xeba300)
-            }}
-        })
-    })
-end)
+            local textLabel = Instance.new("TextLabel")
+            textLabel.Size = UDim2.new(1, 0, 1, 0)
+            textLabel.BackgroundTransparency = 1
+            textLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+            textLabel.TextScaled = true
+            textLabel.Text = "Fruit "
+            textLabel.Parent = billboard
+        end
+    end
+end
+espButton.MouseButton1Click:Connect(enableESP)
