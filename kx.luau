@@ -78,7 +78,7 @@ spawn(function()
     while true do
         local nearestFruit, distance, fruitCount = findNearestFruit()
         if nearestFruit then
-            fruitLabel.Text = "🍎 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n⚡ Total Fruits: " .. fruitCount
+            fruitLabel.Text = "🍌 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n⚡ Total Fruits: " .. fruitCount
         else
             fruitLabel.Text = "❌ No fruits found"
         end
