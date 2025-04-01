@@ -4,11 +4,13 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
+local TweenService = game:GetService("TweenService")
 
 -- Player
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
 
 -- Auto-Join Marines Team
 local function joinMarines()
@@ -96,53 +98,36 @@ tpButton.Parent = screenGui
 
 tpButton.MouseButton1Click:Connect(function()
     spawn(function()
-        while true do
-            local nearestFruit, distance = findNearestFruit()
-            if nearestFruit and distance > 5 then
+        local nearestFruit, distance = findNearestFruit()
+        if not nearestFruit then return end
+
+        local oldGravity = Workspace.Gravity
+        Workspace.Gravity = 0
+        character.HumanoidRootPart.CanCollide = false
+
+        while nearestFruit and distance > 50 do
+            nearestFruit, distance = findNearestFruit()
+            if nearestFruit then
                 local direction = (nearestFruit.Handle.Position - humanoidRootPart.Position).unit
-                humanoidRootPart.CFrame = humanoidRootPart.CFrame + direction * 19
+                local newPosition = humanoidRootPart.Position + direction * math.min(170 * 0.025, distance)
+                
+                local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(0.025, Enum.EasingStyle.Linear), {Position = newPosition})
+                tween:Play()
+                tween.Completed:Wait()
             else
                 break
             end
-            task.wait(0.1)
         end
+        
+        if nearestFruit and distance <= 50 then
+            humanoidRootPart.CFrame = nearestFruit.Handle.CFrame
+        end
+        
+        Workspace.Gravity = oldGravity
+        character.HumanoidRootPart.CanCollide = true
     end)
 end)
 
 local tpCorner = Instance.new("UICorner")
 tpCorner.CornerRadius = UDim.new(0.5, 0)
 tpCorner.Parent = tpButton
-
--- ESP Button
-local espButton = Instance.new("TextButton")
-espButton.Size = UDim2.new(0.1, 0, 0.08, 0)
-espButton.Position = UDim2.new(0.24, 0, 0.01, 0)
-espButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-espButton.Text = "ESP"
-espButton.Parent = screenGui
-
-espButton.MouseButton1Click:Connect(function()
-    for _, fruit in ipairs(Workspace:GetChildren()) do
-        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
-            local billboard = Instance.new("BillboardGui")
-            billboard.Adornee = fruit.Handle
-            billboard.Size = UDim2.new(2, 0, 2, 0)
-            billboard.StudsOffset = Vector3.new(0, 2, 0)
-            billboard.Parent = fruit.Handle
-
-            local circle = Instance.new("Frame")
-            circle.Size = UDim2.new(1, 0, 1, 0)
-            circle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-            circle.BackgroundTransparency = 0.3
-            circle.Parent = billboard
-
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(1, 0)
-            corner.Parent = circle
-        end
-    end
-end)
-
-local espCorner = Instance.new("UICorner")
-espCorner.CornerRadius = UDim.new(0.5, 0)
-espCorner.Parent = espButton
