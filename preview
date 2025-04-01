@@ -80,7 +80,7 @@ spawn(function()
         if nearestFruit then
             fruitLabel.Text = "🍌 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n⚡ Total Fruits: " .. fruitCount
         else
-            fruitLabel.Text = "No fruits found in server 🚩"
+            fruitLabel.Text = "❌ No fruits found"
         end
         task.wait(0.05)
     end
@@ -94,6 +94,21 @@ tpButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
 tpButton.Text = "TP"
 tpButton.Parent = screenGui
 
+tpButton.MouseButton1Click:Connect(function()
+    spawn(function()
+        while true do
+            local nearestFruit, distance = findNearestFruit()
+            if nearestFruit and distance > 5 then
+                local direction = (nearestFruit.Handle.Position - humanoidRootPart.Position).unit
+                humanoidRootPart.CFrame = humanoidRootPart.CFrame + direction * 19
+            else
+                break
+            end
+            task.wait(0.1)
+        end
+    end)
+end)
+
 local tpCorner = Instance.new("UICorner")
 tpCorner.CornerRadius = UDim.new(0.5, 0)
 tpCorner.Parent = tpButton
@@ -105,6 +120,28 @@ espButton.Position = UDim2.new(0.24, 0, 0.01, 0)
 espButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
 espButton.Text = "ESP"
 espButton.Parent = screenGui
+
+espButton.MouseButton1Click:Connect(function()
+    for _, fruit in ipairs(Workspace:GetChildren()) do
+        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+            local billboard = Instance.new("BillboardGui")
+            billboard.Adornee = fruit.Handle
+            billboard.Size = UDim2.new(2, 0, 2, 0)
+            billboard.StudsOffset = Vector3.new(0, 2, 0)
+            billboard.Parent = fruit.Handle
+
+            local circle = Instance.new("Frame")
+            circle.Size = UDim2.new(1, 0, 1, 0)
+            circle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+            circle.BackgroundTransparency = 0.3
+            circle.Parent = billboard
+
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(1, 0)
+            corner.Parent = circle
+        end
+    end
+end)
 
 local espCorner = Instance.new("UICorner")
 espCorner.CornerRadius = UDim.new(0.5, 0)
