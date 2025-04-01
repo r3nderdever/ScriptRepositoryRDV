@@ -96,38 +96,35 @@ tpButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
 tpButton.Text = "TP"
 tpButton.Parent = screenGui
 
-tpButton.MouseButton1Click:Connect(function()
-    spawn(function()
-        local nearestFruit, distance = findNearestFruit()
-        if not nearestFruit then return end
+local espButton = Instance.new("TextButton")
+espButton.Size = UDim2.new(0.1, 0, 0.08, 0)
+espButton.Position = UDim2.new(0.24, 0, 0.01, 0)
+espButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+espButton.Text = "ESP"
+espButton.Parent = screenGui
 
-        local oldGravity = Workspace.Gravity
-        Workspace.Gravity = 0
-        character.HumanoidRootPart.CanCollide = false
+local function createESP(fruit)
+    local billboard = Instance.new("BillboardGui")
+    billboard.Adornee = fruit.Handle
+    billboard.Size = UDim2.new(0, 50, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 2, 0)
+    billboard.Parent = fruit
 
-        while nearestFruit and distance > 50 do
-            nearestFruit, distance = findNearestFruit()
-            if nearestFruit then
-                local direction = (nearestFruit.Handle.Position - humanoidRootPart.Position).unit
-                local newPosition = humanoidRootPart.Position + direction * math.min(170 * 0.025, distance)
-                
-                local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(0.025, Enum.EasingStyle.Linear), {Position = newPosition})
-                tween:Play()
-                tween.Completed:Wait()
-            else
-                break
-            end
+    local circle = Instance.new("Frame")
+    circle.Size = UDim2.new(1, 0, 1, 0)
+    circle.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+    circle.BackgroundTransparency = 0.2
+    circle.Parent = billboard
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = circle
+end
+
+espButton.MouseButton1Click:Connect(function()
+    for _, fruit in ipairs(Workspace:GetChildren()) do
+        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+            createESP(fruit)
         end
-        
-        if nearestFruit and distance <= 50 then
-            humanoidRootPart.CFrame = nearestFruit.Handle.CFrame
-        end
-        
-        Workspace.Gravity = oldGravity
-        character.HumanoidRootPart.CanCollide = true
-    end)
+    end
 end)
-
-local tpCorner = Instance.new("UICorner")
-tpCorner.CornerRadius = UDim.new(0.5, 0)
-tpCorner.Parent = tpButton
