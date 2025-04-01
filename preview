@@ -2,6 +2,8 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 local TweenService = game:GetService("TweenService")
 
 -- Player
@@ -50,18 +52,9 @@ fruitLabel.ZIndex = 2
 fruitLabel.Parent = frame
 
 -- List of fruits
-local fruitsList = {
-    "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit",
-    "Spike Fruit", "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit",
-    "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit",
-    "Phoenix Fruit", "Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit",
-    "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit", "Mammoth Fruit",
-    "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit",
-    "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit",
-    "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit"
-}
+local fruitsList = { "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit", "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit", "Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit", "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit", "Blizzard Fruit", "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit" }
 
--- Function to find the nearest fruit
+-- Function to find nearest fruit
 local function findNearestFruit()
     local nearestFruit = nil
     local minDistance = math.huge
@@ -84,50 +77,52 @@ spawn(function()
     while true do
         local nearestFruit, distance, fruitCount = findNearestFruit()
         if nearestFruit then
-            fruitLabel.Text = "🍍 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n⚡ Total Fruits: " .. fruitCount
+            fruitLabel.Text = "🍌 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n⚡ Total Fruits: " .. fruitCount
         else
-            fruitLabel.Text = "No fruits found in server 🚩"
+            fruitLabel.Text = "❌ No fruits found"
         end
         task.wait(0.05)
     end
 end)
 
--- TP Button
-local tpButton = Instance.new("TextButton")
-tpButton.Size = UDim2.new(0.1, 0, 0.08, 0)
-tpButton.Position = UDim2.new(0.66, 0, 0.01, 0)
-tpButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-tpButton.Text = "TP"
-tpButton.Parent = screenGui
+-- ESP Functionality
+local function createESP(fruit)
+    if not fruit:FindFirstChild("Handle") then return end
+    local billboard = Instance.new("BillboardGui")
+    billboard.Adornee = fruit.Handle
+    billboard.Size = UDim2.new(0, 50, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 2, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = fruit.Handle
+    local circle = Instance.new("Frame")
+    circle.Size = UDim2.new(1, 0, 1, 0)
+    circle.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+    circle.BackgroundTransparency = 0.2
+    circle.Parent = billboard
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = circle
+end
 
-tpButton.MouseButton1Click:Connect(function()
-    spawn(function()
-        local nearestFruit, distance = findNearestFruit()
-        if not nearestFruit then return end
-        
-        local oldGravity = Workspace.Gravity
-        Workspace.Gravity = 0
-        character.HumanoidRootPart.CanCollide = false
-        
-        while nearestFruit and distance > 50 do
-            nearestFruit, distance = findNearestFruit()
-            if nearestFruit then
-                humanoid:MoveTo(nearestFruit.Handle.Position)
-                humanoid.MoveToFinished:Wait()
-            else
-                break
-            end
+-- ESP Button
+local espButton = Instance.new("TextButton")
+espButton.Size = UDim2.new(0.1, 0, 0.08, 0)
+espButton.Position = UDim2.new(0.24, 0, 0.01, 0)
+espButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+espButton.Text = "ESP"
+espButton.Font = Enum.Font.GothamBold
+espButton.TextScaled = true
+espButton.TextColor3 = Color3.new(1, 1, 1)
+espButton.Parent = screenGui
+
+local espCorner = Instance.new("UICorner")
+espCorner.CornerRadius = UDim.new(1, 0)
+espCorner.Parent = espButton
+
+espButton.MouseButton1Click:Connect(function()
+    for _, fruit in ipairs(Workspace:GetChildren()) do
+        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+            createESP(fruit)
         end
-        
-        if nearestFruit and distance <= 50 then
-            humanoidRootPart.CFrame = nearestFruit.Handle.CFrame
-        end
-        
-        Workspace.Gravity = oldGravity
-        character.HumanoidRootPart.CanCollide = true
-    end)
+    end
 end)
-
-local tpCorner = Instance.new("UICorner")
-tpCorner.CornerRadius = UDim.new(0.5, 0)
-tpCorner.Parent = tpButton
