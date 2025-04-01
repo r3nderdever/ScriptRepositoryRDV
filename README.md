@@ -1,5 +1,6 @@
-wsg, this is just a place where i will keep my scripts, Test3 is a blox fruits - fruit finder script, Test - Test2 are failed versions of it, will be replaced in the future.
+wsg, this is just a place where i will keep my scripts, Test3 is a blox fruits - fruit finder script (Not Working!), Test - Test2 are failed versions of it, will be replaced in the future.
 all scripts i put here WILL be open source!
+My only current working script is in kx and preview, both are the same things, aka a fruit notifier for blox fruits BUT preview is the beta/early access version of it.
 
 u can message me on discord " R3nderDV. " with the dot there.
 
@@ -20,6 +21,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/r3nderdever/ScriptRep
 UPD - Script Kx is a fruit notifier - for blox fruits!
 All my 100% working and useful scripts will be posted on...
 Rscripts.net
+hopefully other places soon.
 !!
 
 
