@@ -20,6 +20,7 @@ local function joinMarines()
         player.Team = marinesTeam
     end
 end
+
 joinMarines()
 
 -- UI Setup
@@ -77,13 +78,38 @@ spawn(function()
     while true do
         local nearestFruit, distance, fruitCount = findNearestFruit()
         if nearestFruit then
-            fruitLabel.Text = "🍌 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n⚡ Total Fruits: " .. fruitCount
+            fruitLabel.Text = "🍍 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n⚡ Total Fruits: " .. fruitCount
         else
-            fruitLabel.Text = "❌ No fruits found"
+            fruitLabel.Text = "No fruits found in server 🚩"
         end
         task.wait(0.05)
     end
 end)
+
+-- Teleport Functionality
+local function teleportToNearestFruit()
+    local nearestFruit = findNearestFruit()
+    if nearestFruit then
+        humanoidRootPart.CFrame = nearestFruit.Handle.CFrame
+    end
+end
+
+-- TP Button
+local tpButton = Instance.new("TextButton")
+tpButton.Size = UDim2.new(0.1, 0, 0.08, 0)
+tpButton.Position = UDim2.new(0.12, 0, 0.01, 0)
+tpButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+tpButton.Text = "TP"
+tpButton.Font = Enum.Font.GothamBold
+tpButton.TextScaled = true
+tpButton.TextColor3 = Color3.new(1, 1, 1)
+tpButton.Parent = screenGui
+
+local tpCorner = Instance.new("UICorner")
+tpCorner.CornerRadius = UDim.new(1, 0)
+tpCorner.Parent = tpButton
+
+tpButton.MouseButton1Click:Connect(teleportToNearestFruit)
 
 -- ESP Functionality
 local function createESP(fruit)
