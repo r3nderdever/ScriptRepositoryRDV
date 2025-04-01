@@ -2,31 +2,16 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
 local TweenService = game:GetService("TweenService")
 
 -- Player
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-local humanoid = character:WaitForChild("Humanoid")
-
--- Auto-Join Marines Team
-local function joinMarines()
-    local teams = game:GetService("Teams")
-    local marinesTeam = teams:FindFirstChild("Marines")
-    if marinesTeam then
-        player.Team = marinesTeam
-    end
-end
-
-joinMarines()
 
 -- UI Setup
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
-
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0.3, 0, 0.08, 0)
 frame.Position = UDim2.new(0.35, 0, 0.01, 0)
@@ -36,11 +21,9 @@ frame.BorderSizePixel = 0
 frame.Parent = screenGui
 frame.ClipsDescendants = true
 frame.ZIndex = 1
-
 local uiCorner = Instance.new("UICorner")
 uiCorner.CornerRadius = UDim.new(0.2, 0)
 uiCorner.Parent = frame
-
 local fruitLabel = Instance.new("TextLabel")
 fruitLabel.Size = UDim2.new(1, 0, 1, 0)
 fruitLabel.BackgroundTransparency = 1
@@ -78,7 +61,7 @@ spawn(function()
     while true do
         local nearestFruit, distance, fruitCount = findNearestFruit()
         if nearestFruit then
-            fruitLabel.Text = "🍍 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n⚡ Total Fruits: " .. fruitCount
+            fruitLabel.Text = "🍌 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n⚡ Total Fruits: " .. fruitCount
         else
             fruitLabel.Text = "No fruits found in server 🚩"
         end
@@ -86,11 +69,18 @@ spawn(function()
     end
 end)
 
--- Teleport Functionality
+-- Function to move the entire character to the nearest fruit with a tween
 local function teleportToNearestFruit()
-    local nearestFruit = findNearestFruit()
+    local nearestFruit, minDistance = findNearestFruit()
     if nearestFruit then
-        humanoidRootPart.CFrame = nearestFruit.Handle.CFrame
+        -- Calculate the time to cover the distance at 200 studs per second
+        local time = minDistance / 200
+        local tweenInfo = TweenInfo.new(time, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+        
+        -- Tween the HumanoidRootPart's CFrame to the nearest fruit's position
+        local targetCFrame = CFrame.new(nearestFruit.Handle.Position)
+        local tween = TweenService:Create(humanoidRootPart, tweenInfo, {CFrame = targetCFrame})
+        tween:Play()
     end
 end
 
@@ -104,11 +94,9 @@ tpButton.Font = Enum.Font.GothamBold
 tpButton.TextScaled = true
 tpButton.TextColor3 = Color3.new(1, 1, 1)
 tpButton.Parent = screenGui
-
 local tpCorner = Instance.new("UICorner")
 tpCorner.CornerRadius = UDim.new(1, 0)
 tpCorner.Parent = tpButton
-
 tpButton.MouseButton1Click:Connect(teleportToNearestFruit)
 
 -- ESP Functionality
@@ -140,11 +128,9 @@ espButton.Font = Enum.Font.GothamBold
 espButton.TextScaled = true
 espButton.TextColor3 = Color3.new(1, 1, 1)
 espButton.Parent = screenGui
-
 local espCorner = Instance.new("UICorner")
 espCorner.CornerRadius = UDim.new(1, 0)
 espCorner.Parent = espButton
-
 espButton.MouseButton1Click:Connect(function()
     for _, fruit in ipairs(Workspace:GetChildren()) do
         if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
