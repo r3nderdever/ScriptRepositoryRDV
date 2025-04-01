@@ -80,7 +80,7 @@ spawn(function()
         if nearestFruit then
             fruitLabel.Text = "🍌 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "m\n⚡ Total Fruits: " .. fruitCount
         else
-            fruitLabel.Text = "❌ No fruits found"
+            fruitLabel.Text = "No fruits found in server 🚩"
         end
         task.wait(0.05)
     end
