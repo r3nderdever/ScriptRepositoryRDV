@@ -212,10 +212,10 @@ task.spawn(function()
 end)
 
 -- Buttons and Positioning (Centered Layout)
-local leftButton1 = createStyledButton("TP", UDim2.new(0.35, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
-local leftButton2 = createStyledButton("Placeholder", UDim2.new(0.45, 0, 0.01, 0), Color3.fromRGB(140, 140, 140))
-local rightButton1 = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.55, 0, 0.01, 0), Color3.fromRGB(100, 150, 255))
-local rightButton2 = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.65, 0, 0.01, 0), Color3.fromRGB(100, 255, 100))
+local leftButton1 = createStyledButton("TP", UDim2.new(0.1, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
+local leftButton2 = createStyledButton("Placeholder", UDim2.new(0.225, 0, 0.01, 0), Color3.fromRGB(140, 140, 140))
+local rightButton1 = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.675, 0, 0.01, 0), Color3.fromRGB(100, 150, 255))
+local rightButton2 = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.8, 0, 0.01, 0), Color3.fromRGB(100, 255, 100))
 
 -- Button Logic
 leftButton1.MouseButton1Click:Connect(function()
