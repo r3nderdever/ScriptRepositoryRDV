@@ -3,7 +3,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 
 -- Player
 local player = Players.LocalPlayer
@@ -11,37 +11,43 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 local camera = Workspace.CurrentCamera
 
--- Settings file
-local settingsFile = "RDVfruitNotifier201"
+-- Save file
+local saveFile = "RDVfruitNotifier201.json"
+local savedSettings = {
+	ESP = false,
+	AutoStore = false,
+}
+if isfile(saveFile) then
+	local success, data = pcall(function()
+		return HttpService:JSONDecode(readfile(saveFile))
+	end)
+	if success and typeof(data) == "table" then
+		savedSettings = data
+	end
+end
 local function saveSettings()
-    local data = {
-        autoStore = autoStoreEnabled,
-        esp = espEnabled
-    }
-    writefile(settingsFile, game:GetService("HttpService"):JSONEncode(data))
+	writefile(saveFile, HttpService:JSONEncode(savedSettings))
 end
-
-local function loadSettings()
-    if isfile(settingsFile) then
-        local raw = readfile(settingsFile)
-        local success, result = pcall(function()
-            return game:GetService("HttpService"):JSONDecode(raw)
-        end)
-        if success then
-            return result
-        end
-    end
-    return {autoStore = false, esp = false}
-end
-
--- Load saved settings
-local loaded = loadSettings()
-local autoStoreEnabled = loaded.autoStore
-local espEnabled = loaded.esp
 
 -- UI Setup
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local function createStyledButton(text, pos)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0.1, 0, 0.08, 0)
+	btn.Position = pos
+	btn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+	btn.Text = text
+	btn.Font = Enum.Font.GothamBold
+	btn.TextScaled = true
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Parent = screenGui
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1, 0)
+	corner.Parent = btn
+	return btn
+end
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0.3, 0, 0.08, 0)
@@ -68,172 +74,147 @@ fruitLabel.TextStrokeColor3 = Color3.fromRGB(50, 50, 50)
 fruitLabel.ZIndex = 2
 fruitLabel.Parent = frame
 
--- List of fruits
+-- Fruit List
 local fruitsList = {
-    "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit",
-    "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit",
-    "Phoenix Fruit", "Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit",
-    "T-Rex Fruit", "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit", "Blizzard Fruit",
-    "Dragon Fruit", "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit",
-    "Flame Fruit", "Yeti Fruit"
+	"Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit",
+	"Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit",
+	"Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
+	"Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit", "Blizzard Fruit", "Dragon Fruit",
+	"Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit"
 }
 
--- ESP Container
-local espFolder = Instance.new("Folder")
-espFolder.Name = "FruitESP"
-espFolder.Parent = Workspace
-
--- Function to find nearest fruit
+-- Find nearest fruit
 local function findNearestFruit()
-    local nearestFruit = nil
-    local minDistance = math.huge
-    local fruitCount = 0
-    for _, fruit in ipairs(Workspace:GetChildren()) do
-        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
-            local distance = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
-            fruitCount += 1
-            if distance < minDistance then
-                minDistance = distance
-                nearestFruit = fruit
-            end
-        end
-    end
-    return nearestFruit, minDistance, fruitCount
+	local nearest, minDist, count = nil, math.huge, 0
+	for _, fruit in ipairs(Workspace:GetChildren()) do
+		if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+			local dist = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
+			count += 1
+			if dist < minDist then
+				minDist = dist
+				nearest = fruit
+			end
+		end
+	end
+	return nearest, minDist, count
 end
 
--- Update UI
-spawn(function()
-    while true do
-        local nearestFruit, distance, fruitCount = findNearestFruit()
-        if nearestFruit then
-            fruitLabel.Text = "🍌 Nearest: " .. nearestFruit.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "⚡ Total Fruits: " .. fruitCount
-        else
-            fruitLabel.Text = "No fruits found in server 🚩"
-        end
-        task.wait(0.05)
-    end
+-- Fruit ESP
+local activeBillboards = {}
+
+local function createBillboard(fruit)
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.new(0, 100, 0, 30)
+	bb.Adornee = fruit:FindFirstChild("Handle")
+	bb.AlwaysOnTop = true
+	bb.Parent = fruit
+
+	local label = Instance.new("TextLabel")
+	label.Text = fruit.Name
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.TextColor3 = Color3.new(1, 1, 0)
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	label.Parent = bb
+
+	return bb
+end
+
+local function updateESP()
+	for _, gui in pairs(activeBillboards) do
+		if gui and gui.Parent then gui:Destroy() end
+	end
+	table.clear(activeBillboards)
+
+	if savedSettings.ESP then
+		for _, fruit in ipairs(Workspace:GetChildren()) do
+			if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+				table.insert(activeBillboards, createBillboard(fruit))
+			end
+		end
+	end
+end
+
+-- Re-update ESP every second if enabled
+task.spawn(function()
+	while true do
+		if savedSettings.ESP then updateESP() end
+		task.wait(1)
+	end
 end)
 
--- Auto Store Loop
+-- Update fruit UI
 spawn(function()
-    while true do
-        if autoStoreEnabled then
-            pcall(function()
-                for _, fr in ipairs(player.Backpack:GetChildren()) do
-                    if fr:IsA("Tool") and fr.Name:find("Fruit") then
-                        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fr:GetAttribute("OriginalName"), fr)
-                    end
-                end
-                for _, fr in ipairs(player.Character:GetChildren()) do
-                    if fr:IsA("Tool") and fr.Name:find("Fruit") then
-                        ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", fr:GetAttribute("OriginalName"), fr)
-                    end
-                end
-            end)
-        end
-        task.wait(1)
-    end
+	while true do
+		local nearest, distance, count = findNearestFruit()
+		if nearest then
+			fruitLabel.Text = "🍌 Nearest: " .. nearest.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "⚡ Total Fruits: " .. count
+		else
+			fruitLabel.Text = "No fruits found in server 🚩"
+		end
+		task.wait(0.05)
+	end
 end)
 
--- ESP Loop
-spawn(function()
-    while true do
-        if espEnabled then
-            for _, child in ipairs(espFolder:GetChildren()) do
-                child:Destroy()
-            end
+-- Auto Store
+local function autoStore()
+	if not savedSettings.AutoStore then return end
+	local backpack = player:WaitForChild("Backpack")
+	for _, tool in ipairs(backpack:GetChildren()) do
+		if tool:IsA("Tool") and tool.Name:find("Fruit") then
+			local original = tool:GetAttribute("OriginalName") or tool.Name
+			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", original, tool)
+		end
+	end
+end
 
-            for _, fruit in ipairs(Workspace:GetChildren()) do
-                if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
-                    local billboard = Instance.new("BillboardGui")
-                    billboard.Name = "ESP"
-                    billboard.Size = UDim2.new(0, 100, 0, 40)
-                    billboard.StudsOffset = Vector3.new(0, 2, 0)
-                    billboard.AlwaysOnTop = true
-                    billboard.Adornee = fruit.Handle
-                    billboard.Parent = espFolder
-
-                    local label = Instance.new("TextLabel", billboard)
-                    label.Size = UDim2.new(1, 0, 1, 0)
-                    label.BackgroundTransparency = 1
-                    label.Text = fruit.Name
-                    label.TextColor3 = Color3.new(1, 1, 1)
-                    label.TextScaled = true
-                    label.Font = Enum.Font.GothamBold
-                end
-            end
-        else
-            for _, child in ipairs(espFolder:GetChildren()) do
-                child:Destroy()
-            end
-        end
-        task.wait(1)
-    end
+task.spawn(function()
+	while true do
+		autoStore()
+		task.wait(3)
+	end
 end)
 
--- Tween TP
+-- Teleport
+local tpButton = createStyledButton("TP", UDim2.new(0.12, 0, 0.01, 0))
 local function teleportToNearestFruit()
-    local nearestFruit, minDistance = findNearestFruit()
-    if nearestFruit then
-        tpButton.BackgroundColor3 = Color3.fromRGB(65, 165, 65)
-        local time = minDistance / 200
-        local tweenInfo = TweenInfo.new(time, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-        local targetCFrame = CFrame.new(nearestFruit.Handle.Position)
-        local tween = TweenService:Create(humanoidRootPart, tweenInfo, {CFrame = targetCFrame})
-        local connection
-        connection = RunService.RenderStepped:Connect(function()
-            camera.CFrame = humanoidRootPart.CFrame
-        end)
-        tween.Completed:Connect(function()
-            connection:Disconnect()
-            tpButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-        end)
-        tween:Play()
-    end
-end
+	local fruit, dist = findNearestFruit()
+	if fruit then
+		local tweenTime = dist / 200
+		tpButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+		local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(fruit.Handle.Position)})
 
--- TP Button
-tpButton = Instance.new("TextButton")
-tpButton.Size = UDim2.new(0.1, 0, 0.08, 0)
-tpButton.Position = UDim2.new(0.12, 0, 0.01, 0)
-tpButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-tpButton.Text = "TP"
-tpButton.Font = Enum.Font.GothamBold
-tpButton.TextScaled = true
-tpButton.TextColor3 = Color3.new(1, 1, 1)
-tpButton.Parent = screenGui
-local tpCorner = Instance.new("UICorner")
-tpCorner.CornerRadius = UDim.new(1, 0)
-tpCorner.Parent = tpButton
+		local camConn = RunService.RenderStepped:Connect(function()
+			camera.CFrame = humanoidRootPart.CFrame
+		end)
+
+		tween.Completed:Connect(function()
+			camConn:Disconnect()
+			tpButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+		end)
+
+		tween:Play()
+	end
+end
 tpButton.MouseButton1Click:Connect(teleportToNearestFruit)
 
--- Auto Store Toggle Button
-local autoStoreButton = tpButton:Clone()
-autoStoreButton.Position = UDim2.new(0.84, 0, 0.01, 0)
-autoStoreButton.Text = autoStoreEnabled and "Auto Store: ON" or "Auto Store: OFF"
-autoStoreButton.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
-autoStoreButton.Parent = screenGui
-autoStoreButton.MouseButton1Click:Connect(function()
-    autoStoreEnabled = not autoStoreEnabled
-    autoStoreButton.Text = autoStoreEnabled and "Auto Store: ON" or "Auto Store: OFF"
-    saveSettings()
-end)
-
--- ESP Toggle Button
-local espButton = tpButton:Clone()
-espButton.Position = UDim2.new(0.73, 0, 0.01, 0)
-espButton.Text = espEnabled and "ESP: ON" or "ESP: OFF"
-espButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-espButton.Parent = screenGui
-espButton.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled
-    espButton.Text = espEnabled and "ESP: ON" or "ESP: OFF"
-    saveSettings()
-end)
-
 -- Placeholder Button
-local placeholderButton = tpButton:Clone()
-placeholderButton.Position = UDim2.new(0.62, 0, 0.01, 0)
-placeholderButton.Text = "Placeholder"
-placeholderButton.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
-placeholderButton.Parent = screenGui
+local placeholderButton = createStyledButton("Placeholder", UDim2.new(0.23, 0, 0.01, 0))
+
+-- AutoStore Toggle
+local autoStoreButton = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.74, 0, 0.01, 0))
+autoStoreButton.MouseButton1Click:Connect(function()
+	savedSettings.AutoStore = not savedSettings.AutoStore
+	autoStoreButton.Text = "AutoStore: " .. (savedSettings.AutoStore and "On" or "Off")
+	saveSettings()
+end)
+
+-- ESP Toggle
+local espButton = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.85, 0, 0.01, 0))
+espButton.MouseButton1Click:Connect(function()
+	savedSettings.ESP = not savedSettings.ESP
+	espButton.Text = "ESP: " .. (savedSettings.ESP and "On" or "Off")
+	saveSettings()
+	updateESP()
+end)
