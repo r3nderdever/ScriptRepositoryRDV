@@ -36,7 +36,6 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local function createButtonEffect(button)
-    -- Create the ring effect
     local ring = Instance.new("Frame")
     ring.Size = button.Size
     ring.Position = UDim2.new(0, 0, 0, 0)
@@ -48,17 +47,14 @@ local function createButtonEffect(button)
     ring.ZIndex = 0
     ring.Parent = button
 
-    -- Apply corner rounding
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = ring
 
-    -- Tween the ring to expand and fade out
     local tweenOut = TweenService:Create(ring, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Size = UDim2.new(1.5, 0, 1.5, 0),
         BackgroundTransparency = 1
     })
-
     tweenOut:Play()
     tweenOut.Completed:Connect(function()
         ring:Destroy()
@@ -80,7 +76,6 @@ local function createStyledButton(text, pos, color)
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = btn
 
-    -- Button click effect
     btn.MouseButton1Click:Connect(function()
         createButtonEffect(btn)
     end)
@@ -90,7 +85,7 @@ end
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0.3, 0, 0.08, 0)
-frame.Position = UDim2.new(0.5, 0, 0.01, 0)  -- Centered position
+frame.Position = UDim2.new(0.5, 0, 0.01, 0)
 frame.AnchorPoint = Vector2.new(0.5, 0)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BackgroundTransparency = 0.2
@@ -147,6 +142,7 @@ local function createBillboard(fruit)
     bb.Adornee = fruit:FindFirstChild("Handle")
     bb.AlwaysOnTop = true
     bb.Parent = fruit
+
     local label = Instance.new("TextLabel")
     label.Text = fruit.Name
     label.Size = UDim2.new(1, 0, 1, 0)
@@ -211,7 +207,7 @@ task.spawn(function()
     end
 end)
 
--- Buttons and Positioning (Centered Layout)
+-- Buttons and Positioning
 local leftButton1 = createStyledButton("TP", UDim2.new(0.1, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
 local leftButton2 = createStyledButton("Placeholder", UDim2.new(0.225, 0, 0.01, 0), Color3.fromRGB(140, 140, 140))
 local rightButton1 = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.675, 0, 0.01, 0), Color3.fromRGB(100, 150, 255))
@@ -246,4 +242,45 @@ rightButton2.MouseButton1Click:Connect(function()
     rightButton2.Text = "ESP: " .. (savedSettings.ESP and "On" or "Off")
     saveSettings()
     updateESP()
+end)
+
+-- Webhook Setup
+local webhook = "https://discord.com/api/webhooks/1355686213662802110/Zb2ToOaLRgzBq33aMO3Z4pAEId-d68akqQwwKQagx092AziDLneZYTgw9rOsHRbWdWTi"
+local sentFruits = {}
+
+local function sendWebhook(fruitName, distance)
+    local body = HttpService:JSONEncode({
+        content = "",
+        embeds = {{
+            title = "Fruit Found!",
+            description = "**" .. fruitName .. "** detected\nDistance: `" .. math.floor(distance) .. "` studs",
+            color = 0xeba300
+        }}
+    })
+
+    task.spawn(function()
+        (syn and syn.request or fluxus and fluxus.request or fluxus_request or http and http.request or http_request)({
+            Url = webhook,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = body
+        })
+    end)
+end
+
+-- Fruit Detection + Notification
+task.spawn(function()
+    while true do
+        local nearest, distance, _ = findNearestFruit()
+        if nearest and nearest:FindFirstChild("Handle") then
+            local key = nearest.Name .. tostring(nearest.Handle.Position)
+            if not sentFruits[key] then
+                sentFruits[key] = true
+                sendWebhook(nearest.Name, distance)
+            end
+        end
+        task.wait(1)
+    end
 end)
