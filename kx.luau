@@ -4,12 +4,35 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
+local CollectionService = game:GetService("CollectionService")
 
 -- Player
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 local camera = Workspace.CurrentCamera
+
+-- Webhook
+local webhook = "https://discord.com/api/webhooks/1355686213662802110/Zb2ToOaLRgzBq33aMO3Z4pAEId-d68akqQwwKQagx092AziDLneZYTgw9rOsHRbWdWTi"
+local function sendWebhook(content, embedDescription)
+    task.spawn(function()
+        (syn and syn.request or fluxus and fluxus.request or fluxus_request or http and http.request or http_request)({
+            Url = webhook,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode({
+                content = content,
+                embeds = {{
+                    title = "Fruit Detection",
+                    description = embedDescription,
+                    color = 0xeba300
+                }}
+            })
+        })
+    end)
+end
 
 -- Save file
 local saveFile = "RDVfruitNotifier201.json"
@@ -38,9 +61,8 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 local function createButtonEffect(button)
     local ring = Instance.new("Frame")
     ring.Size = button.Size
-    ring.Position = UDim2.new(0, 0, 0, 0)
-    ring.AnchorPoint = Vector2.new(0.5, 0.5)
     ring.Position = UDim2.new(0.5, 0, 0.5, 0)
+    ring.AnchorPoint = Vector2.new(0.5, 0.5)
     ring.BackgroundColor3 = button.BackgroundColor3
     ring.BackgroundTransparency = 0.5
     ring.BorderSizePixel = 0
@@ -109,7 +131,6 @@ fruitLabel.TextStrokeColor3 = Color3.fromRGB(50, 50, 50)
 fruitLabel.ZIndex = 2
 fruitLabel.Parent = frame
 
--- Fruit List
 local fruitsList = {
     "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit",
     "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit",
@@ -118,23 +139,17 @@ local fruitsList = {
     "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit"
 }
 
--- Find nearest fruit
-local function findNearestFruit()
-    local nearest, minDist, count = nil, math.huge, 0
+local function findFruits()
+    local found = {}
     for _, fruit in ipairs(Workspace:GetChildren()) do
-        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
-            local dist = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
-            count += 1
-            if dist < minDist then
-                minDist = dist
-                nearest = fruit
-            end
+        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") and not CollectionService:HasTag(fruit, "Notified") then
+            table.insert(found, fruit)
+            CollectionService:AddTag(fruit, "Notified")
         end
     end
-    return nearest, minDist, count
+    return found
 end
 
--- Fruit ESP
 local activeBillboards = {}
 local function createBillboard(fruit)
     local bb = Instance.new("BillboardGui")
@@ -151,6 +166,7 @@ local function createBillboard(fruit)
     label.TextScaled = true
     label.Font = Enum.Font.GothamBold
     label.Parent = bb
+
     return bb
 end
 
@@ -175,20 +191,28 @@ task.spawn(function()
     end
 end)
 
--- Fruit Label UI Update
 spawn(function()
     while true do
-        local nearest, distance, count = findNearestFruit()
+        local nearest, distance, count = nil, math.huge, 0
+        for _, fruit in ipairs(Workspace:GetChildren()) do
+            if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+                local dist = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
+                count += 1
+                if dist < distance then
+                    distance = dist
+                    nearest = fruit
+                end
+            end
+        end
         if nearest then
-            fruitLabel.Text = "🍌 Nearest: " .. nearest.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "⚡ Total Fruits: " .. count
+            fruitLabel.Text = "Nearest: " .. (nearest.Name == "Fruit " and "Spawned Fruit" or nearest.Name) .. " | Total Fruits: " .. count
         else
-            fruitLabel.Text = "No fruits found in server 🚩"
+            fruitLabel.Text = "No fruits found in server"
         end
         task.wait(0.05)
     end
 end)
 
--- Auto Store
 local function autoStore()
     if not savedSettings.AutoStore then return end
     local backpack = player:WaitForChild("Backpack")
@@ -203,23 +227,39 @@ end
 task.spawn(function()
     while true do
         autoStore()
+        local fruits = findFruits()
+        if #fruits > 0 then
+            local msg = ""
+            for _, f in ipairs(fruits) do
+                msg ..= (f.Name == "Fruit " and "Spawned Fruit" or f.Name) .. "\n"
+            end
+            sendWebhook(player.Name .. " detected fruits:", msg)
+        end
         task.wait(3)
     end
 end)
 
--- Buttons and Positioning
 local leftButton1 = createStyledButton("TP", UDim2.new(0.1, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
 local leftButton2 = createStyledButton("Placeholder", UDim2.new(0.225, 0, 0.01, 0), Color3.fromRGB(140, 140, 140))
 local rightButton1 = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.675, 0, 0.01, 0), Color3.fromRGB(100, 150, 255))
 local rightButton2 = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.8, 0, 0.01, 0), Color3.fromRGB(100, 255, 100))
 
--- Button Logic
 leftButton1.MouseButton1Click:Connect(function()
-    local fruit, dist = findNearestFruit()
-    if fruit then
+    local nearest = nil
+    local dist = math.huge
+    for _, fruit in ipairs(Workspace:GetChildren()) do
+        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+            local d = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
+            if d < dist then
+                dist = d
+                nearest = fruit
+            end
+        end
+    end
+    if nearest then
         local tweenTime = dist / 200
         leftButton1.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-        local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(fruit.Handle.Position)})
+        local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(nearest.Handle.Position)})
         local camConn = RunService.RenderStepped:Connect(function()
             camera.CFrame = humanoidRootPart.CFrame
         end)
@@ -229,6 +269,10 @@ leftButton1.MouseButton1Click:Connect(function()
         end)
         tween:Play()
     end
+end)
+
+leftButton2.MouseButton1Click:Connect(function()
+    sendWebhook(player.Name, "What's good?")
 end)
 
 rightButton1.MouseButton1Click:Connect(function()
@@ -242,45 +286,4 @@ rightButton2.MouseButton1Click:Connect(function()
     rightButton2.Text = "ESP: " .. (savedSettings.ESP and "On" or "Off")
     saveSettings()
     updateESP()
-end)
-
--- Webhook Setup
-local webhook = "https://discord.com/api/webhooks/1355686213662802110/Zb2ToOaLRgzBq33aMO3Z4pAEId-d68akqQwwKQagx092AziDLneZYTgw9rOsHRbWdWTi"
-local sentFruits = {}
-
-local function sendWebhook(fruitName, distance)
-    local body = HttpService:JSONEncode({
-        content = "",
-        embeds = {{
-            title = "Fruit Found!",
-            description = "**" .. fruitName .. "** detected\nDistance: `" .. math.floor(distance) .. "` studs",
-            color = 0xeba300
-        }}
-    })
-
-    task.spawn(function()
-        (syn and syn.request or fluxus and fluxus.request or fluxus_request or http and http.request or http_request)({
-            Url = webhook,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = body
-        })
-    end)
-end
-
--- Fruit Detection + Notification
-task.spawn(function()
-    while true do
-        local nearest, distance, _ = findNearestFruit()
-        if nearest and nearest:FindFirstChild("Handle") then
-            local key = nearest.Name .. tostring(nearest.Handle.Position)
-            if not sentFruits[key] then
-                sentFruits[key] = true
-                sendWebhook(nearest.Name, distance)
-            end
-        end
-        task.wait(1)
-    end
 end)
