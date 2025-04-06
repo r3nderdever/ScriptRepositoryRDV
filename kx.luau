@@ -70,9 +70,11 @@ local function createButtonEffect(button)
     ring.BorderSizePixel = 0
     ring.ZIndex = 0
     ring.Parent = button
+
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = ring
+
     local tweenOut = TweenService:Create(ring, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Size = UDim2.new(1.5, 0, 1.5, 0),
         BackgroundTransparency = 1
@@ -93,9 +95,11 @@ local function createStyledButton(text, pos, color)
     btn.TextScaled = true
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Parent = screenGui
+
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = btn
+
     btn.MouseButton1Click:Connect(function()
         createButtonEffect(btn)
     end)
@@ -161,6 +165,7 @@ local function createBillboard(fruit)
     bb.Adornee = fruit:FindFirstChild("Handle")
     bb.AlwaysOnTop = true
     bb.Parent = fruit
+
     local label = Instance.new("TextLabel")
     label.Text = fruit.Name
     label.Size = UDim2.new(1, 0, 1, 0)
@@ -177,6 +182,7 @@ local function updateESP()
         if gui and gui.Parent then gui:Destroy() end
     end
     table.clear(activeBillboards)
+
     if savedSettings.ESP then
         for _, fruit in ipairs(Workspace:GetChildren()) do
             if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
@@ -203,7 +209,6 @@ task.spawn(function()
                 local displayName = fruit.Name == "Fruit " and "Spawned Fruit" or fruit.Name
                 table.insert(found, displayName)
                 CollectionService:AddTag(fruit, "Detected")
-
                 fruit:GetPropertyChangedSignal("Parent"):Connect(function()
                     if fruit.Parent == nil or fruit.Parent == player.Backpack or fruit:IsDescendantOf(player.Character) then
                         CollectionService:RemoveTag(fruit, "Detected")
@@ -221,11 +226,13 @@ end)
 -- Fruit Label UI Update
 spawn(function()
     while true do
-        local nearest, distance, count = findNearestFruit()
-        if nearest then
-            fruitLabel.Text = "Nearest: " .. (nearest.Name == "Fruit " and "Spawned Fruit" or nearest.Name) .. " | Total Fruits: " .. count
-        else
-            fruitLabel.Text = "No fruits found in server"
+        if not isTypingFeedback then
+            local nearest, distance, count = findNearestFruit()
+            if nearest then
+                fruitLabel.Text = "Nearest: " .. (nearest.Name == "Fruit " and "Spawned Fruit" or nearest.Name) .. " | Total Fruits: " .. count
+            else
+                fruitLabel.Text = "No fruits found in server"
+            end
         end
         task.wait(0.05)
     end
@@ -287,20 +294,61 @@ rightButton2.MouseButton1Click:Connect(function()
     updateESP()
 end)
 
--- Feedback input
+-- Enhanced Feedback Logic
+local isTypingFeedback = false
+local userFeedback = ""
+
 leftButton2.MouseButton1Click:Connect(function()
-    fruitLabel.Text = "Type your feedback and press Enter..."
-    local inputConnection
-    inputConnection = UserInputService.InputBegan:Connect(function(input, processed)
-        if processed then return end
-        if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode ~= Enum.KeyCode.Return then
-            fruitLabel.Text = input.KeyCode.Name
-        elseif input.KeyCode == Enum.KeyCode.Return then
-            sendWebhook("Feedback from " .. player.Name, fruitLabel.Text)
-            inputConnection:Disconnect()
-            fruitLabel.Text = "Feedback sent!"
-            task.wait(2)
-            fruitLabel.Text = "Waiting for fruit data..."
+    if isTypingFeedback then return end
+    isTypingFeedback = true
+    fruitLabel.Text = "Type Feedback Here!"
+    fruitLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+
+    local function resetUI()
+        fruitLabel.TextColor3 = Color3.new(1, 1, 1)
+        fruitLabel.Text = "No fruits found in server"
+        leftButton2.Text = "Feedback"
+        leftButton2.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        isTypingFeedback = false
+        userFeedback = ""
+    end
+
+    local textBox = Instance.new("TextBox")
+    textBox.Size = fruitLabel.Size
+    textBox.Position = fruitLabel.Position
+    textBox.BackgroundTransparency = 1
+    textBox.TextScaled = true
+    textBox.Text = ""
+    textBox.ClearTextOnFocus = true
+    textBox.Font = fruitLabel.Font
+    textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textBox.Parent = fruitLabel
+
+    textBox.Focused:Connect(function()
+        if textBox.Text == "Type Feedback Here!" then
+            textBox.Text = ""
         end
     end)
+
+    textBox:GetPropertyChangedSignal("Text"):Connect(function()
+        if textBox.Text ~= "" and leftButton2.Text ~= "Send!" then
+            leftButton2.Text = "Send!"
+            leftButton2.BackgroundColor3 = Color3.fromRGB(30, 100, 30)
+        elseif textBox.Text == "" then
+            leftButton2.Text = "Feedback"
+            leftButton2.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        end
+    end)
+
+    local connection
+    connection = leftButton2.MouseButton1Click:Connect(function()
+        if textBox.Text ~= "" then
+            sendWebhook("Feedback from " .. player.Name, textBox.Text)
+            connection:Disconnect()
+            textBox:Destroy()
+            resetUI()
+        end
+    end)
+
+    textBox:CaptureFocus()
 end)
