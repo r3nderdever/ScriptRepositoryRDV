@@ -33,11 +33,11 @@ end
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
-local function createStyledButton(text, pos)
+local function createStyledButton(text, pos, color)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0.1, 0, 0.08, 0)
 	btn.Position = pos
-	btn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+	btn.BackgroundColor3 = color
 	btn.Text = text
 	btn.Font = Enum.Font.GothamBold
 	btn.TextScaled = true
@@ -136,7 +136,6 @@ local function updateESP()
 	end
 end
 
--- Re-update ESP every second if enabled
 task.spawn(function()
 	while true do
 		if savedSettings.ESP then updateESP() end
@@ -144,7 +143,7 @@ task.spawn(function()
 	end
 end)
 
--- Update fruit UI
+-- Fruit Label UI Update
 spawn(function()
 	while true do
 		local nearest, distance, count = findNearestFruit()
@@ -176,9 +175,17 @@ task.spawn(function()
 	end
 end)
 
--- Teleport
-local tpButton = createStyledButton("TP", UDim2.new(0.12, 0, 0.01, 0))
-local function teleportToNearestFruit()
+-- Buttons and Positioning (Symmetrical UI)
+-- Left side buttons
+local tpButton = createStyledButton("TP", UDim2.new(0.15, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
+local placeholderButton = createStyledButton("Placeholder", UDim2.new(0.26, 0, 0.01, 0), Color3.fromRGB(140, 140, 140))
+
+-- Right side buttons (aligned symmetrically)
+local autoStoreButton = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.48, 0, 0.01, 0), Color3.fromRGB(100, 150, 255))
+local espButton = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.59, 0, 0.01, 0), Color3.fromRGB(100, 255, 100))
+
+-- TP tween logic
+tpButton.MouseButton1Click:Connect(function()
 	local fruit, dist = findNearestFruit()
 	if fruit then
 		local tweenTime = dist / 200
@@ -196,22 +203,16 @@ local function teleportToNearestFruit()
 
 		tween:Play()
 	end
-end
-tpButton.MouseButton1Click:Connect(teleportToNearestFruit)
+end)
 
--- Placeholder Button
-local placeholderButton = createStyledButton("Placeholder", UDim2.new(0.23, 0, 0.01, 0))
-
--- AutoStore Toggle
-local autoStoreButton = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.74, 0, 0.01, 0))
+-- AutoStore toggle logic
 autoStoreButton.MouseButton1Click:Connect(function()
 	savedSettings.AutoStore = not savedSettings.AutoStore
 	autoStoreButton.Text = "AutoStore: " .. (savedSettings.AutoStore and "On" or "Off")
 	saveSettings()
 end)
 
--- ESP Toggle
-local espButton = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.85, 0, 0.01, 0))
+-- ESP toggle logic
 espButton.MouseButton1Click:Connect(function()
 	savedSettings.ESP = not savedSettings.ESP
 	espButton.Text = "ESP: " .. (savedSettings.ESP and "On" or "Off")
