@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
 
 -- Player
@@ -14,7 +15,25 @@ local camera = Workspace.CurrentCamera
 
 -- Webhook
 local webhook = "https://discord.com/api/webhooks/1355686213662802110/Zb2ToOaLRgzBq33aMO3Z4pAEId-d68akqQwwKQagx092AziDLneZYTgw9rOsHRbWdWTi"
-local function sendWebhook(content, embedDescription)
+local function sendWebhook(fruits)
+    if #fruits == 0 then return end
+
+    local descriptions = {}
+    for _, fruit in ipairs(fruits) do
+        local name = fruit.Name == "Fruit " and "Spawned Fruit" or fruit.Name
+        table.insert(descriptions, "- " .. name)
+    end
+
+    local embedDescription = table.concat(descriptions, "\n")
+    local payload = {
+        content = "",
+        embeds = {{
+            title = "Fruit(s) Detected by " .. player.Name,
+            description = embedDescription,
+            color = 0xeba300
+        }}
+    }
+
     task.spawn(function()
         (syn and syn.request or fluxus and fluxus.request or fluxus_request or http and http.request or http_request)({
             Url = webhook,
@@ -22,14 +41,7 @@ local function sendWebhook(content, embedDescription)
             Headers = {
                 ["Content-Type"] = "application/json"
             },
-            Body = HttpService:JSONEncode({
-                content = content,
-                embeds = {{
-                    title = "Fruit Detection",
-                    description = embedDescription,
-                    color = 0xeba300
-                }}
-            })
+            Body = HttpService:JSONEncode(payload)
         })
     end)
 end
@@ -40,7 +52,6 @@ local savedSettings = {
     ESP = false,
     AutoStore = false,
 }
-
 if isfile(saveFile) then
     local success, data = pcall(function()
         return HttpService:JSONDecode(readfile(saveFile))
@@ -49,7 +60,6 @@ if isfile(saveFile) then
         savedSettings = data
     end
 end
-
 local function saveSettings()
     writefile(saveFile, HttpService:JSONEncode(savedSettings))
 end
@@ -93,15 +103,12 @@ local function createStyledButton(text, pos, color)
     btn.TextScaled = true
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Parent = screenGui
-
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(1, 0)
     corner.Parent = btn
-
     btn.MouseButton1Click:Connect(function()
         createButtonEffect(btn)
     end)
-
     return btn
 end
 
@@ -131,6 +138,7 @@ fruitLabel.TextStrokeColor3 = Color3.fromRGB(50, 50, 50)
 fruitLabel.ZIndex = 2
 fruitLabel.Parent = frame
 
+-- Fruit List
 local fruitsList = {
     "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit",
     "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit",
@@ -139,17 +147,37 @@ local fruitsList = {
     "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit"
 }
 
+-- Find fruits
 local function findFruits()
     local found = {}
     for _, fruit in ipairs(Workspace:GetChildren()) do
-        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") and not CollectionService:HasTag(fruit, "Notified") then
+        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
             table.insert(found, fruit)
-            CollectionService:AddTag(fruit, "Notified")
         end
     end
     return found
 end
 
+-- Auto Store
+local function autoStore()
+    if not savedSettings.AutoStore then return end
+    local backpack = player:WaitForChild("Backpack")
+    for _, tool in ipairs(backpack:GetChildren()) do
+        if tool:IsA("Tool") and tool.Name:find("Fruit") then
+            local original = tool:GetAttribute("OriginalName") or tool.Name
+            ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", original, tool)
+        end
+    end
+end
+
+task.spawn(function()
+    while true do
+        autoStore()
+        task.wait(3)
+    end
+end)
+
+-- Fruit ESP
 local activeBillboards = {}
 local function createBillboard(fruit)
     local bb = Instance.new("BillboardGui")
@@ -157,7 +185,6 @@ local function createBillboard(fruit)
     bb.Adornee = fruit:FindFirstChild("Handle")
     bb.AlwaysOnTop = true
     bb.Parent = fruit
-
     local label = Instance.new("TextLabel")
     label.Text = fruit.Name
     label.Size = UDim2.new(1, 0, 1, 0)
@@ -166,7 +193,6 @@ local function createBillboard(fruit)
     label.TextScaled = true
     label.Font = Enum.Font.GothamBold
     label.Parent = bb
-
     return bb
 end
 
@@ -176,10 +202,8 @@ local function updateESP()
     end
     table.clear(activeBillboards)
     if savedSettings.ESP then
-        for _, fruit in ipairs(Workspace:GetChildren()) do
-            if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
-                table.insert(activeBillboards, createBillboard(fruit))
-            end
+        for _, fruit in ipairs(findFruits()) do
+            table.insert(activeBillboards, createBillboard(fruit))
         end
     end
 end
@@ -191,73 +215,56 @@ task.spawn(function()
     end
 end)
 
+-- Fruit Label and Webhook
 spawn(function()
     while true do
-        local nearest, distance, count = nil, math.huge, 0
-        for _, fruit in ipairs(Workspace:GetChildren()) do
-            if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
-                local dist = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
-                count += 1
-                if dist < distance then
-                    distance = dist
-                    nearest = fruit
-                end
-            end
-        end
-        if nearest then
-            fruitLabel.Text = "Nearest: " .. (nearest.Name == "Fruit " and "Spawned Fruit" or nearest.Name) .. " | Total Fruits: " .. count
-        else
-            fruitLabel.Text = "No fruits found in server"
-        end
-        task.wait(0.05)
-    end
-end)
-
-local function autoStore()
-    if not savedSettings.AutoStore then return end
-    local backpack = player:WaitForChild("Backpack")
-    for _, tool in ipairs(backpack:GetChildren()) do
-        if tool:IsA("Tool") and tool.Name:find("Fruit") then
-            local original = tool:GetAttribute("OriginalName") or tool.Name
-            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", original, tool)
-        end
-    end
-end
-
-task.spawn(function()
-    while true do
-        autoStore()
         local fruits = findFruits()
-        if #fruits > 0 then
-            local msg = ""
-            for _, f in ipairs(fruits) do
-                msg ..= (f.Name == "Fruit " and "Spawned Fruit" or f.Name) .. "\n"
+        local nearest, minDist = nil, math.huge
+        local notifyList = {}
+
+        for _, fruit in ipairs(fruits) do
+            local dist = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
+            if dist < minDist then
+                minDist = dist
+                nearest = fruit
             end
-            sendWebhook(player.Name .. " detected fruits:", msg)
+            if not CollectionService:HasTag(fruit, "Notified") then
+                table.insert(notifyList, fruit)
+                CollectionService:AddTag(fruit, "Notified")
+            end
         end
-        task.wait(3)
+
+        sendWebhook(notifyList)
+
+        if nearest then
+            local name = nearest.Name == "Fruit " and "Spawned Fruit" or nearest.Name
+            fruitLabel.Text = "🍌 Nearest: " .. name .. " | 🚩 Distance: " .. math.floor(minDist) .. " ⚡ Total Fruits: " .. #fruits
+        else
+            fruitLabel.Text = "No fruits found in server 🚩"
+        end
+
+        task.wait(0.5)
     end
 end)
 
+-- Buttons
 local leftButton1 = createStyledButton("TP", UDim2.new(0.1, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
 local leftButton2 = createStyledButton("Placeholder", UDim2.new(0.225, 0, 0.01, 0), Color3.fromRGB(140, 140, 140))
 local rightButton1 = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.675, 0, 0.01, 0), Color3.fromRGB(100, 150, 255))
 local rightButton2 = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.8, 0, 0.01, 0), Color3.fromRGB(100, 255, 100))
 
 leftButton1.MouseButton1Click:Connect(function()
-    local nearest = nil
-    local dist = math.huge
-    for _, fruit in ipairs(Workspace:GetChildren()) do
-        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
-            local d = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
-            if d < dist then
-                dist = d
-                nearest = fruit
-            end
+    local fruits = findFruits()
+    local nearest, minDist = nil, math.huge
+    for _, fruit in ipairs(fruits) do
+        local dist = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
+        if dist < minDist then
+            minDist = dist
+            nearest = fruit
         end
     end
     if nearest then
-        local tweenTime = dist / 200
+        local tweenTime = minDist / 200
         leftButton1.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
         local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(nearest.Handle.Position)})
         local camConn = RunService.RenderStepped:Connect(function()
@@ -272,7 +279,23 @@ leftButton1.MouseButton1Click:Connect(function()
 end)
 
 leftButton2.MouseButton1Click:Connect(function()
-    sendWebhook(player.Name, "What's good?")
+    task.spawn(function()
+        (syn and syn.request or fluxus and fluxus.request or fluxus_request or http and http.request or http_request)({
+            Url = webhook,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = HttpService:JSONEncode({
+                content = "",
+                embeds = {{
+                    title = player.Name,
+                    description = "What's good?",
+                    color = 0xeba300
+                }}
+            })
+        })
+    end)
 end)
 
 rightButton1.MouseButton1Click:Connect(function()
