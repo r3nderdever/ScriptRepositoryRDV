@@ -33,6 +33,33 @@ end
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
+local function createButtonEffect(button)
+	local ring = Instance.new("Frame")
+	ring.Size = button.Size
+	ring.Position = UDim2.new(0, 0, 0, 0)
+	ring.AnchorPoint = Vector2.new(0.5, 0.5)
+	ring.Position = UDim2.new(0.5, 0, 0.5, 0)
+	ring.BackgroundColor3 = button.BackgroundColor3
+	ring.BackgroundTransparency = 0.5
+	ring.BorderSizePixel = 0
+	ring.ZIndex = 0
+	ring.Parent = button
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1, 0)
+	corner.Parent = ring
+
+	local tweenOut = TweenService:Create(ring, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Size = UDim2.new(1.5, 0, 1.5, 0),
+		BackgroundTransparency = 1
+	})
+
+	tweenOut:Play()
+	tweenOut.Completed:Connect(function()
+		ring:Destroy()
+	end)
+end
+
 local function createStyledButton(text, pos, color)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0.1, 0, 0.08, 0)
@@ -46,12 +73,18 @@ local function createStyledButton(text, pos, color)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(1, 0)
 	corner.Parent = btn
+
+	btn.MouseButton1Click:Connect(function()
+		createButtonEffect(btn)
+	end)
+
 	return btn
 end
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0.3, 0, 0.08, 0)
-frame.Position = UDim2.new(0.35, 0, 0.01, 0)
+frame.Position = UDim2.new(0.5, 0, 0.01, 0)
+frame.AnchorPoint = Vector2.new(0.5, 0)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BackgroundTransparency = 0.2
 frame.BorderSizePixel = 0
@@ -101,14 +134,12 @@ end
 
 -- Fruit ESP
 local activeBillboards = {}
-
 local function createBillboard(fruit)
 	local bb = Instance.new("BillboardGui")
 	bb.Size = UDim2.new(0, 100, 0, 30)
 	bb.Adornee = fruit:FindFirstChild("Handle")
 	bb.AlwaysOnTop = true
 	bb.Parent = fruit
-
 	local label = Instance.new("TextLabel")
 	label.Text = fruit.Name
 	label.Size = UDim2.new(1, 0, 1, 0)
@@ -117,7 +148,6 @@ local function createBillboard(fruit)
 	label.TextScaled = true
 	label.Font = Enum.Font.GothamBold
 	label.Parent = bb
-
 	return bb
 end
 
@@ -126,7 +156,6 @@ local function updateESP()
 		if gui and gui.Parent then gui:Destroy() end
 	end
 	table.clear(activeBillboards)
-
 	if savedSettings.ESP then
 		for _, fruit in ipairs(Workspace:GetChildren()) do
 			if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
@@ -175,47 +204,39 @@ task.spawn(function()
 	end
 end)
 
--- Buttons and Positioning (Symmetrical UI)
--- Left side buttons
-local tpButton = createStyledButton("TP", UDim2.new(0.15, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
-local placeholderButton = createStyledButton("Placeholder", UDim2.new(0.26, 0, 0.01, 0), Color3.fromRGB(140, 140, 140))
+-- Buttons and Positioning (Centered Layout)
+local leftButton2 = createStyledButton("Placeholder", UDim2.new(0.5 - 0.15 - 0.1, 0, 0.01, 0), Color3.fromRGB(140, 140, 140))
+local leftButton1 = createStyledButton("TP", UDim2.new(0.5 - 0.15, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
+local rightButton1 = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.5 + 0.3, 0, 0.01, 0), Color3.fromRGB(100, 150, 255))
+local rightButton2 = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.5 + 0.4, 0, 0.01, 0), Color3.fromRGB(100, 255, 100))
 
--- Right side buttons (aligned symmetrically)
-local autoStoreButton = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.48, 0, 0.01, 0), Color3.fromRGB(100, 150, 255))
-local espButton = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.59, 0, 0.01, 0), Color3.fromRGB(100, 255, 100))
-
--- TP tween logic
-tpButton.MouseButton1Click:Connect(function()
+-- Button Logic
+leftButton1.MouseButton1Click:Connect(function()
 	local fruit, dist = findNearestFruit()
 	if fruit then
 		local tweenTime = dist / 200
-		tpButton.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+		leftButton1.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
 		local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(fruit.Handle.Position)})
-
 		local camConn = RunService.RenderStepped:Connect(function()
 			camera.CFrame = humanoidRootPart.CFrame
 		end)
-
 		tween.Completed:Connect(function()
 			camConn:Disconnect()
-			tpButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+			leftButton1.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
 		end)
-
 		tween:Play()
 	end
 end)
 
--- AutoStore toggle logic
-autoStoreButton.MouseButton1Click:Connect(function()
+rightButton1.MouseButton1Click:Connect(function()
 	savedSettings.AutoStore = not savedSettings.AutoStore
-	autoStoreButton.Text = "AutoStore: " .. (savedSettings.AutoStore and "On" or "Off")
+	rightButton1.Text = "AutoStore: " .. (savedSettings.AutoStore and "On" or "Off")
 	saveSettings()
 end)
 
--- ESP toggle logic
-espButton.MouseButton1Click:Connect(function()
+rightButton2.MouseButton1Click:Connect(function()
 	savedSettings.ESP = not savedSettings.ESP
-	espButton.Text = "ESP: " .. (savedSettings.ESP and "On" or "Off")
+	rightButton2.Text = "ESP: " .. (savedSettings.ESP and "On" or "Off")
 	saveSettings()
 	updateESP()
 end)
