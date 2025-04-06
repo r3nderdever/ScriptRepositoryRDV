@@ -14,19 +14,21 @@ local camera = Workspace.CurrentCamera
 -- Save file
 local saveFile = "RDVfruitNotifier201.json"
 local savedSettings = {
-	ESP = false,
-	AutoStore = false,
+    ESP = false,
+    AutoStore = false,
 }
+
 if isfile(saveFile) then
-	local success, data = pcall(function()
-		return HttpService:JSONDecode(readfile(saveFile))
-	end)
-	if success and typeof(data) == "table" then
-		savedSettings = data
-	end
+    local success, data = pcall(function()
+        return HttpService:JSONDecode(readfile(saveFile))
+    end)
+    if success and typeof(data) == "table" then
+        savedSettings = data
+    end
 end
+
 local function saveSettings()
-	writefile(saveFile, HttpService:JSONEncode(savedSettings))
+    writefile(saveFile, HttpService:JSONEncode(savedSettings))
 end
 
 -- UI Setup
@@ -34,56 +36,61 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local function createButtonEffect(button)
-	local ring = Instance.new("Frame")
-	ring.Size = button.Size
-	ring.Position = UDim2.new(0, 0, 0, 0)
-	ring.AnchorPoint = Vector2.new(0.5, 0.5)
-	ring.Position = UDim2.new(0.5, 0, 0.5, 0)
-	ring.BackgroundColor3 = button.BackgroundColor3
-	ring.BackgroundTransparency = 0.5
-	ring.BorderSizePixel = 0
-	ring.ZIndex = 0
-	ring.Parent = button
+    -- Create the ring effect
+    local ring = Instance.new("Frame")
+    ring.Size = button.Size
+    ring.Position = UDim2.new(0, 0, 0, 0)
+    ring.AnchorPoint = Vector2.new(0.5, 0.5)
+    ring.Position = UDim2.new(0.5, 0, 0.5, 0)
+    ring.BackgroundColor3 = button.BackgroundColor3
+    ring.BackgroundTransparency = 0.5
+    ring.BorderSizePixel = 0
+    ring.ZIndex = 0
+    ring.Parent = button
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(1, 0)
-	corner.Parent = ring
+    -- Apply corner rounding
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = ring
 
-	local tweenOut = TweenService:Create(ring, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		Size = UDim2.new(1.5, 0, 1.5, 0),
-		BackgroundTransparency = 1
-	})
+    -- Tween the ring to expand and fade out
+    local tweenOut = TweenService:Create(ring, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = UDim2.new(1.5, 0, 1.5, 0),
+        BackgroundTransparency = 1
+    })
 
-	tweenOut:Play()
-	tweenOut.Completed:Connect(function()
-		ring:Destroy()
-	end)
+    tweenOut:Play()
+    tweenOut.Completed:Connect(function()
+        ring:Destroy()
+    end)
 end
 
 local function createStyledButton(text, pos, color)
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.1, 0, 0.08, 0)
-	btn.Position = pos
-	btn.BackgroundColor3 = color
-	btn.Text = text
-	btn.Font = Enum.Font.GothamBold
-	btn.TextScaled = true
-	btn.TextColor3 = Color3.new(1, 1, 1)
-	btn.Parent = screenGui
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(1, 0)
-	corner.Parent = btn
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.1, 0, 0.08, 0)
+    btn.Position = pos
+    btn.BackgroundColor3 = color
+    btn.Text = text
+    btn.Font = Enum.Font.GothamBold
+    btn.TextScaled = true
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Parent = screenGui
 
-	btn.MouseButton1Click:Connect(function()
-		createButtonEffect(btn)
-	end)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = btn
 
-	return btn
+    -- Button click effect
+    btn.MouseButton1Click:Connect(function()
+        createButtonEffect(btn)
+    end)
+
+    return btn
 end
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0.3, 0, 0.08, 0)
-frame.Position = UDim2.new(0.5, 0, 0.01, 0)
+frame.Position = UDim2.new(0.5, 0, 0.01, 0)  -- Centered position
 frame.AnchorPoint = Vector2.new(0.5, 0)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BackgroundTransparency = 0.2
@@ -109,134 +116,134 @@ fruitLabel.Parent = frame
 
 -- Fruit List
 local fruitsList = {
-	"Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit",
-	"Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit",
-	"Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
-	"Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit", "Blizzard Fruit", "Dragon Fruit",
-	"Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit"
+    "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit",
+    "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit",
+    "Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
+    "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit", "Blizzard Fruit", "Dragon Fruit",
+    "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit"
 }
 
 -- Find nearest fruit
 local function findNearestFruit()
-	local nearest, minDist, count = nil, math.huge, 0
-	for _, fruit in ipairs(Workspace:GetChildren()) do
-		if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
-			local dist = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
-			count += 1
-			if dist < minDist then
-				minDist = dist
-				nearest = fruit
-			end
-		end
-	end
-	return nearest, minDist, count
+    local nearest, minDist, count = nil, math.huge, 0
+    for _, fruit in ipairs(Workspace:GetChildren()) do
+        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+            local dist = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
+            count += 1
+            if dist < minDist then
+                minDist = dist
+                nearest = fruit
+            end
+        end
+    end
+    return nearest, minDist, count
 end
 
 -- Fruit ESP
 local activeBillboards = {}
 local function createBillboard(fruit)
-	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.new(0, 100, 0, 30)
-	bb.Adornee = fruit:FindFirstChild("Handle")
-	bb.AlwaysOnTop = true
-	bb.Parent = fruit
-	local label = Instance.new("TextLabel")
-	label.Text = fruit.Name
-	label.Size = UDim2.new(1, 0, 1, 0)
-	label.BackgroundTransparency = 1
-	label.TextColor3 = Color3.new(1, 1, 0)
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamBold
-	label.Parent = bb
-	return bb
+    local bb = Instance.new("BillboardGui")
+    bb.Size = UDim2.new(0, 100, 0, 30)
+    bb.Adornee = fruit:FindFirstChild("Handle")
+    bb.AlwaysOnTop = true
+    bb.Parent = fruit
+    local label = Instance.new("TextLabel")
+    label.Text = fruit.Name
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.new(1, 1, 0)
+    label.TextScaled = true
+    label.Font = Enum.Font.GothamBold
+    label.Parent = bb
+    return bb
 end
 
 local function updateESP()
-	for _, gui in pairs(activeBillboards) do
-		if gui and gui.Parent then gui:Destroy() end
-	end
-	table.clear(activeBillboards)
-	if savedSettings.ESP then
-		for _, fruit in ipairs(Workspace:GetChildren()) do
-			if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
-				table.insert(activeBillboards, createBillboard(fruit))
-			end
-		end
-	end
+    for _, gui in pairs(activeBillboards) do
+        if gui and gui.Parent then gui:Destroy() end
+    end
+    table.clear(activeBillboards)
+    if savedSettings.ESP then
+        for _, fruit in ipairs(Workspace:GetChildren()) do
+            if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+                table.insert(activeBillboards, createBillboard(fruit))
+            end
+        end
+    end
 end
 
 task.spawn(function()
-	while true do
-		if savedSettings.ESP then updateESP() end
-		task.wait(1)
-	end
+    while true do
+        if savedSettings.ESP then updateESP() end
+        task.wait(1)
+    end
 end)
 
 -- Fruit Label UI Update
 spawn(function()
-	while true do
-		local nearest, distance, count = findNearestFruit()
-		if nearest then
-			fruitLabel.Text = "🍌 Nearest: " .. nearest.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "⚡ Total Fruits: " .. count
-		else
-			fruitLabel.Text = "No fruits found in server 🚩"
-		end
-		task.wait(0.05)
-	end
+    while true do
+        local nearest, distance, count = findNearestFruit()
+        if nearest then
+            fruitLabel.Text = "🍌 Nearest: " .. nearest.Name .. " | 🚩 Distance: " .. math.floor(distance) .. "⚡ Total Fruits: " .. count
+        else
+            fruitLabel.Text = "No fruits found in server 🚩"
+        end
+        task.wait(0.05)
+    end
 end)
 
 -- Auto Store
 local function autoStore()
-	if not savedSettings.AutoStore then return end
-	local backpack = player:WaitForChild("Backpack")
-	for _, tool in ipairs(backpack:GetChildren()) do
-		if tool:IsA("Tool") and tool.Name:find("Fruit") then
-			local original = tool:GetAttribute("OriginalName") or tool.Name
-			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", original, tool)
-		end
-	end
+    if not savedSettings.AutoStore then return end
+    local backpack = player:WaitForChild("Backpack")
+    for _, tool in ipairs(backpack:GetChildren()) do
+        if tool:IsA("Tool") and tool.Name:find("Fruit") then
+            local original = tool:GetAttribute("OriginalName") or tool.Name
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", original, tool)
+        end
+    end
 end
 
 task.spawn(function()
-	while true do
-		autoStore()
-		task.wait(3)
-	end
+    while true do
+        autoStore()
+        task.wait(3)
+    end
 end)
 
 -- Buttons and Positioning (Centered Layout)
-local leftButton2 = createStyledButton("Placeholder", UDim2.new(0.5 - 0.15 - 0.1, 0, 0.01, 0), Color3.fromRGB(140, 140, 140))
-local leftButton1 = createStyledButton("TP", UDim2.new(0.5 - 0.15, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
-local rightButton1 = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.5 + 0.3, 0, 0.01, 0), Color3.fromRGB(100, 150, 255))
-local rightButton2 = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.5 + 0.4, 0, 0.01, 0), Color3.fromRGB(100, 255, 100))
+local leftButton1 = createStyledButton("TP", UDim2.new(0.35, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
+local leftButton2 = createStyledButton("Placeholder", UDim2.new(0.45, 0, 0.01, 0), Color3.fromRGB(140, 140, 140))
+local rightButton1 = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.55, 0, 0.01, 0), Color3.fromRGB(100, 150, 255))
+local rightButton2 = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.65, 0, 0.01, 0), Color3.fromRGB(100, 255, 100))
 
 -- Button Logic
 leftButton1.MouseButton1Click:Connect(function()
-	local fruit, dist = findNearestFruit()
-	if fruit then
-		local tweenTime = dist / 200
-		leftButton1.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-		local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(fruit.Handle.Position)})
-		local camConn = RunService.RenderStepped:Connect(function()
-			camera.CFrame = humanoidRootPart.CFrame
-		end)
-		tween.Completed:Connect(function()
-			camConn:Disconnect()
-			leftButton1.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-		end)
-		tween:Play()
-	end
+    local fruit, dist = findNearestFruit()
+    if fruit then
+        local tweenTime = dist / 200
+        leftButton1.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(fruit.Handle.Position)})
+        local camConn = RunService.RenderStepped:Connect(function()
+            camera.CFrame = humanoidRootPart.CFrame
+        end)
+        tween.Completed:Connect(function()
+            camConn:Disconnect()
+            leftButton1.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+        end)
+        tween:Play()
+    end
 end)
 
 rightButton1.MouseButton1Click:Connect(function()
-	savedSettings.AutoStore = not savedSettings.AutoStore
-	rightButton1.Text = "AutoStore: " .. (savedSettings.AutoStore and "On" or "Off")
-	saveSettings()
+    savedSettings.AutoStore = not savedSettings.AutoStore
+    rightButton1.Text = "AutoStore: " .. (savedSettings.AutoStore and "On" or "Off")
+    saveSettings()
 end)
 
 rightButton2.MouseButton1Click:Connect(function()
-	savedSettings.ESP = not savedSettings.ESP
-	rightButton2.Text = "ESP: " .. (savedSettings.ESP and "On" or "Off")
-	saveSettings()
-	updateESP()
+    savedSettings.ESP = not savedSettings.ESP
+    rightButton2.Text = "ESP: " .. (savedSettings.ESP and "On" or "Off")
+    saveSettings()
+    updateESP()
 end)
