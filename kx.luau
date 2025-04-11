@@ -66,7 +66,7 @@ local function createButtonEffect(button)
     ring.Position = UDim2.new(0.5, 0, 0.5, 0)
     ring.AnchorPoint = Vector2.new(0.5, 0.5)
     ring.BackgroundColor3 = button.BackgroundColor3
-    ring.BackgroundTransparency = 0.5
+    ring.BackgroundTransparency = 0.2
     ring.BorderSizePixel = 0
     ring.ZIndex = 0
     ring.Parent = button
