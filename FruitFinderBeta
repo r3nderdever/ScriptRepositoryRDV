@@ -1,3 +1,3 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/r3nderdever/ScriptRepositoryRDV/refs/heads/main/kx3.luau"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/r3nderdever/ScriptRepositoryRDV/refs/heads/main/kx.luau"))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/r3nderdever/ScriptRepositoryRDV/refs/heads/main/kx2.luau"))()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/r3nderdever/ScriptRepositoryRDV/refs/heads/main/kx3.luau"))()
