@@ -3,9 +3,10 @@ local fruitsList = {
     "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit",
     "Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
     "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit", "Blizzard Fruit", "Dragon Fruit",
-    "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit", "Creation Fruit", "Eagle Fruit"
+    "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit"
 }
 
+-- Find fruits and count them
 local function countFruits()
     local count = 0
     for _, fruit in ipairs(workspace:GetChildren()) do
@@ -16,6 +17,7 @@ local function countFruits()
     return count
 end
 
+-- Teleport-related code
 local PlaceID = game.PlaceId
 local AllIDs = {}
 local foundAnything = ""
@@ -90,12 +92,24 @@ function Teleport()
     end)
 end
 
--- Start searching only after player spawns
+-- Main logic: Wait for player spawn and check fruit conditions
 task.spawn(function()
     local player = game.Players.LocalPlayer
     local character = player.Character or player.CharacterAdded:Wait()
     local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
+    -- Delay 1.5 seconds after spawn
+    task.delay(1.5, function()
+        local fruitCount = countFruits()
+        if fruitCount > 0 then
+            -- If fruits are found, call tweenToNearestFruit() after 2 seconds
+            task.delay(2, function()
+                tweenToNearestFruit()  -- Call your tween function here
+            end)
+        end
+    end)
+
+    -- Fruit detection loop
     local noFruitTime = 0
     while task.wait(0.05) do
         local fruitCount = countFruits()
