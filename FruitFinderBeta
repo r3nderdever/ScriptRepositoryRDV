@@ -1,0 +1,12 @@
+task.spawn(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/r3nderdever/ScriptRepositoryRDV/refs/heads/main/kx.luau"))()
+end)
+
+task.spawn(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/r3nderdever/ScriptRepositoryRDV/refs/heads/main/kx2.luau"))()
+end)
+
+task.spawn(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/r3nderdever/ScriptRepositoryRDV/refs/heads/main/kx3.luau"))()
+en
+d)
