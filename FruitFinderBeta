@@ -168,3 +168,17 @@ function Teleport()
         end
     end)
 end
+
+
+
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", original, tool)
+        end
+    end
+end
+
+task.spawn(function()
+    do
+        autoStore()
+        task.wait(0.04)
+    end
+end)
