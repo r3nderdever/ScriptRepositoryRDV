@@ -241,10 +241,6 @@ end)
 -- Auto Store
 local function autoStore()
     if not savedSettings.AutoStore then return end
-    local backpack = player:WaitForChild("Backpack")
-    for _, tool in ipairs(backpack:GetChildren()) do
-        if tool:IsA("Tool") and tool.Name:find("Fruit") then
-            local original = tool:GetAttribute("OriginalName") or tool.Name
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", original, tool)
         end
     end
