@@ -3,9 +3,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local plr = Players.LocalPlayer
 
 local function JoinTeam()
-    if plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates then
+    -- Ensure the player has a valid team before checking
+    if not plr.Team or (plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates) then
         ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
     end
 end
 
-JoinTeam()
+-- Call the function
+JoinTeam
+()
