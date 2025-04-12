@@ -35,7 +35,6 @@ local function sendWebhook(title, desc)
     end)
 end
 
--- Send webhook on script execution
 sendWebhook("Script Executed", "User: " .. player.Name .. " has executed the script.")
 
 -- Save file
@@ -52,6 +51,7 @@ if isfile(saveFile) then
         savedSettings = data
     end
 end
+
 local function saveSettings()
     writefile(saveFile, HttpService:JSONEncode(savedSettings))
 end
@@ -103,6 +103,7 @@ local function createStyledButton(text, pos, color)
     btn.MouseButton1Click:Connect(function()
         createButtonEffect(btn)
     end)
+
     return btn
 end
 
@@ -159,6 +160,7 @@ end
 
 -- Fruit ESP
 local activeBillboards = {}
+
 local function createBillboard(fruit)
     local bb = Instance.new("BillboardGui")
     bb.Size = UDim2.new(0, 100, 0, 30)
@@ -174,6 +176,7 @@ local function createBillboard(fruit)
     label.TextScaled = true
     label.Font = Enum.Font.GothamBold
     label.Parent = bb
+
     return bb
 end
 
@@ -200,7 +203,6 @@ task.spawn(function()
 end)
 
 -- Fruit Detection
-local detectedFruits = {}
 task.spawn(function()
     while true do
         local found = {}
@@ -224,7 +226,8 @@ task.spawn(function()
 end)
 
 -- Fruit Label UI Update
-spawn(function()
+local isTypingFeedback = false
+task.spawn(function()
     while true do
         if not isTypingFeedback then
             local nearest, distance, count = findNearestFruit()
@@ -257,6 +260,34 @@ task.spawn(function()
     end
 end)
 
+-- TP/Tween function with lock
+local isTweening = false
+local function tweenToNearestFruit()
+    if isTweening then return end
+    local fruit, dist = findNearestFruit()
+    if fruit then
+        isTweening = true
+        local tweenTime = dist / 200
+        leftButton1.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+
+        local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {
+            CFrame = CFrame.new(fruit.Handle.Position)
+        })
+
+        local camConn = RunService.RenderStepped:Connect(function()
+            camera.CFrame = humanoidRootPart.CFrame
+        end)
+
+        tween.Completed:Connect(function()
+            camConn:Disconnect()
+            leftButton1.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+            isTweening = false
+        end)
+
+        tween:Play()
+    end
+end
+
 -- Buttons
 local leftButton1 = createStyledButton("TP", UDim2.new(0.1, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
 local leftButton2 = createStyledButton("Feedback", UDim2.new(0.225, 0, 0.01, 0), Color3.fromRGB(25, 25, 25))
@@ -264,22 +295,7 @@ local rightButton1 = createStyledButton("AutoStore: " .. (savedSettings.AutoStor
 local rightButton2 = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.8, 0, 0.01, 0), Color3.fromRGB(100, 255, 100))
 
 -- Button Logic
-leftButton1.MouseButton1Click:Connect(function()
-    local fruit, dist = findNearestFruit()
-    if fruit then
-        local tweenTime = dist / 200
-        leftButton1.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-        local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(fruit.Handle.Position)})
-        local camConn = RunService.RenderStepped:Connect(function()
-            camera.CFrame = humanoidRootPart.CFrame
-        end)
-        tween.Completed:Connect(function()
-            camConn:Disconnect()
-            leftButton1.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-        end)
-        tween:Play()
-    end
-end)
+leftButton1.MouseButton1Click:Connect(tweenToNearestFruit)
 
 rightButton1.MouseButton1Click:Connect(function()
     savedSettings.AutoStore = not savedSettings.AutoStore
@@ -294,10 +310,8 @@ rightButton2.MouseButton1Click:Connect(function()
     updateESP()
 end)
 
--- Enhanced Feedback Logic
-local isTypingFeedback = false
+-- Feedback Button Logic
 local userFeedback = ""
-
 leftButton2.MouseButton1Click:Connect(function()
     if isTypingFeedback then return end
     isTypingFeedback = true
