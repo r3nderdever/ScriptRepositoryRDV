@@ -243,8 +243,6 @@ local function autoStore()
     if not savedSettings.AutoStore then return end
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", original, tool)
         end
-    end
-end
 
 task.spawn(function()
     while true do
