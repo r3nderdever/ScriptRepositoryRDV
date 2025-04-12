@@ -1,154 +1,169 @@
--- Services
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
-local Workspace = game:GetService("Workspace")
-
+local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-local camera = Workspace.CurrentCamera
 
--- Webhook
-local webhook = "https://discord.com/api/webhooks/1355686213662802110/Zb2ToOaLRgzBq33aMO3Z4pAEId-d68akqQwwKQagx092AziDLneZYTgw9rOsHRbWdWTi"
-local function sendWebhook(title, desc)
-    task.spawn(function()
-        (syn and syn.request or http_request or request)({
-            Url = webhook,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = HttpService:JSONEncode({
-                embeds = {{
-                    title = title,
-                    description = desc,
-                    color = 0xffcc00
-                }}
-            })
-        })
-    end)
-end
-sendWebhook("Script Executed", "User: " .. player.Name .. " has executed the script.")
-
--- Join Team
-local function JoinTeam()
-    if not player.Team or (player.Team ~= game.Teams.Marines and player.Team ~= game.Teams.Pirates) then
-        ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
-    end
-end
-JoinTeam()
-
--- Fruit List
+-- Fruit list
 local fruitsList = {
     "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit",
     "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit",
     "Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
     "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit", "Blizzard Fruit", "Dragon Fruit",
-    "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit",
-    "Creation Fruit", "Eagle Fruit"
+    "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit", "Creation Fruit", "Eagle Fruit"
 }
 
--- Status GUI
-local statusGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-statusGui.IgnoreGuiInset = true
-statusGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- Team joining
+local function JoinTeam()
+    if not player.Team or (player.Team ~= game.Teams.Marines and player.Team ~= game.Teams.Pirates) then
+        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
+    end
+end
+JoinTeam()
 
-local blackOverlay = Instance.new("Frame", statusGui)
-blackOverlay.Size = UDim2.new(10, 0, 10, 0)
-blackOverlay.Position = UDim2.new(-5, 0, -5, 0)
-blackOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
-blackOverlay.BackgroundTransparency = 0.7
-blackOverlay.ZIndex = 99
-
-local statusLabel = Instance.new("TextLabel", blackOverlay)
-statusLabel.AnchorPoint = Vector2.new(0.5, 0.5)
-statusLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
-statusLabel.Size = UDim2.new(0.5, 0, 0.1, 0)
-statusLabel.Text = "Starting..."
-statusLabel.Font = Enum.Font.GothamBold
-statusLabel.TextScaled = true
-statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-statusLabel.BackgroundTransparency = 1
-statusLabel.ZIndex = 100
-
-local function updateStatus(text)
-    statusLabel.Text = text
+-- Count fruits
+local function countFruits()
+    local count = 0
+    for _, fruit in ipairs(workspace:GetChildren()) do
+        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+            count += 1
+        end
+    end
+    return count
 end
 
--- Find Nearest Fruit
-local function findNearestFruit()
-    local closest, minDist, total = nil, math.huge, 0
-    for _, fruit in ipairs(Workspace:GetChildren()) do
+-- Find nearest fruit
+local function getNearestFruit()
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+    local hrp = character.HumanoidRootPart
+    local nearestFruit, shortestDist = nil, math.huge
+
+    for _, fruit in ipairs(workspace:GetChildren()) do
         if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
-            local dist = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
-            total += 1
-            if dist < minDist then
-                minDist = dist
-                closest = fruit
+            local dist = (hrp.Position - fruit.Handle.Position).Magnitude
+            if dist < shortestDist then
+                nearestFruit = fruit
+                shortestDist = dist
             end
         end
     end
-    return closest, total
+
+    return nearestFruit
 end
 
--- Constant Auto Store
+-- Tween to fruit
+local isTweening = false
+local currentTween = nil
+local function tweenToNearestFruit()
+    if isTweening then return end
+    local fruit = getNearestFruit()
+    if not fruit then return end
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = character.HumanoidRootPart
+
+    isTweening = true
+    local goal = {CFrame = CFrame.new(fruit.Handle.Position + Vector3.new(0, 3, 0))}
+    local tweenInfo = TweenInfo.new((hrp.Position - fruit.Handle.Position).Magnitude / 80, Enum.EasingStyle.Linear)
+    currentTween = TweenService:Create(hrp, tweenInfo, goal)
+    currentTween:Play()
+
+    currentTween.Completed:Connect(function()
+        isTweening = false
+    end)
+end
+
+-- Fruit watch loop
 task.spawn(function()
-    while true do
-        updateStatus("Storing...")
-        local backpack = player:FindFirstChild("Backpack")
-        if backpack then
-            for _, tool in ipairs(backpack:GetChildren()) do
-                if tool:IsA("Tool") and tool.Name:find("Fruit") then
-                    local original = tool:GetAttribute("OriginalName") or tool.Name
-                    ReplicatedStorage.Remotes.CommF_:InvokeServer("StoreFruit", original, tool)
+    local noFruitTime = 0
+    while task.wait(0.05) do
+        if not isTweening then
+            local fruit = getNearestFruit()
+            if fruit then
+                tweenToNearestFruit()
+                noFruitTime = 0
+            else
+                noFruitTime += 0.05
+                if noFruitTime >= 3 then
+                    Teleport()
+                    break
                 end
             end
+        else
+            local fruit = getNearestFruit()
+            if not fruit or not fruit:FindFirstChild("Handle") then
+                if currentTween then currentTween:Cancel() end
+                isTweening = false
+            end
         end
-        task.wait(0.1)
     end
 end)
 
--- Tween to Nearest Fruit on Spawn
-local tweening = false
-local function tweenToFruit(fruit)
-    if not fruit or not fruit:FindFirstChild("Handle") then return end
-    updateStatus("Tweening...")
-    tweening = true
-    local goal = fruit.Handle.Position
-    local distance = (humanoidRootPart.Position - goal).Magnitude
-    local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(distance / 200, Enum.EasingStyle.Linear), {CFrame = CFrame.new(goal)})
-    local camFollow = RunService.RenderStepped:Connect(function()
-        camera.CFrame = humanoidRootPart.CFrame
-    end)
-    tween.Completed:Connect(function()
-        camFollow:Disconnect()
-        tweening = false
-    end)
-    tween:Play()
+-- Teleport functions
+local PlaceID = game.PlaceId
+local AllIDs = {}
+local foundAnything = ""
+local actualHour = os.date("!*t").hour
+
+local function TPReturner()
+    local Site
+    if foundAnything == "" then
+        Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
+    else
+        Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
+    end
+
+    local ID = ""
+    if Site.nextPageCursor and Site.nextPageCursor ~= "null" and Site.nextPageCursor ~= nil then
+        foundAnything = Site.nextPageCursor
+    end
+
+    local num = 0
+    for i, v in pairs(Site.data) do
+        local Possible = true
+        ID = tostring(v.id)
+        if tonumber(v.maxPlayers) > tonumber(v.playing) then
+            for _, Existing in pairs(AllIDs) do
+                if num ~= 0 and ID == tostring(Existing) then
+                    Possible = false
+                elseif tonumber(actualHour) ~= tonumber(Existing) then
+                    pcall(function()
+                        delfile("NotSameServers.json")
+                        AllIDs = {}
+                        table.insert(AllIDs, actualHour)
+                    end)
+                end
+                num += 1
+            end
+            if Possible then
+                table.insert(AllIDs, ID)
+                pcall(function()
+                    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+                    TeleportService:TeleportToPlaceInstance(PlaceID, ID, player)
+                end)
+                wait(4)
+                return true
+            end
+        end
+    end
+    return false
 end
 
--- Fruit Auto Tweening Logic
-task.spawn(function()
-    while true do
-        if not tweening then
-            local fruit, total = findNearestFruit()
-            if fruit then
-                sendWebhook("Fruit Detected", "Nearest: " .. fruit.Name .. " | Total: " .. total)
-                tweenToFruit(fruit)
-
-                -- Wait until fruit is gone before proceeding
-                repeat
-                    task.wait(0.2)
-                until not fruit.Parent or fruit:IsDescendantOf(player.Character) or fruit.Parent == player.Backpack
-            else
-                updateStatus("Searching...")
-                task.wait(0.5)
-            end
-        else
-            task.wait(0.2)
+local isTeleporting = false
+function Teleport()
+    if isTeleporting then return end
+    isTeleporting = true
+    task.spawn(function()
+        while isTeleporting do
+            pcall(function()
+                TPReturner()
+                if foundAnything ~= "" then
+                    TPReturner()
+                end
+            end)
+            wait(1)
         end
-    end
-end)
+    end)
+end
