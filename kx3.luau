@@ -8,5 +8,4 @@ local function JoinTeam()
     end
 end
 
-JoinTeam
-()
+JoinTeam()
