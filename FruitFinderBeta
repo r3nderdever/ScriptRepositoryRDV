@@ -1,3 +1,169 @@
-loadstring(game:HttpGet("https://raw.githubusercontent.com/r3nderdever/ScriptRepositoryRDV/refs/heads/main/kx3.luau"))()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/r3nderdever/ScriptRepositoryRDV/refs/heads/main/kx.luau"))()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/r3nderdever/ScriptRepositoryRDV/refs/heads/main/kx2.luau"))()
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local player = Players.LocalPlayer
+
+-- Fruit list
+local fruitsList = {
+    "Fruit ", "Rocket Fruit", "Spin Fruit", "Ghost Fruit", "Spring Fruit", "Bomb Fruit", "Spike Fruit", "Smoke Fruit", "Blade Fruit",
+    "Sand Fruit", "Ice Fruit", "Dark Fruit", "Diamond Fruit", "Light Fruit", "Rubber Fruit", "Barrier Fruit", "Magma Fruit", "Phoenix Fruit",
+    "Love Fruit", "Spider Fruit", "Sound Fruit", "Buddha Fruit", "Quake Fruit", "Gravity Fruit", "Control Fruit", "T-Rex Fruit",
+    "Mammoth Fruit", "Spirit Fruit", "Venom Fruit", "Shadow Fruit", "Rumble Fruit", "Portal Fruit", "Blizzard Fruit", "Dragon Fruit",
+    "Leopard Fruit", "Dough Fruit", "Dragon (West) Fruit", "Dragon (East) Fruit", "Kitsune Fruit", "Gas Fruit", "Flame Fruit", "Yeti Fruit"
+}
+
+-- Team joining
+local function JoinTeam()
+    if not player.Team or (player.Team ~= game.Teams.Marines and player.Team ~= game.Teams.Pirates) then
+        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
+    end
+end
+JoinTeam()
+
+-- Count fruits
+local function countFruits()
+    local count = 0
+    for _, fruit in ipairs(workspace:GetChildren()) do
+        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+            count += 1
+        end
+    end
+    return count
+end
+
+-- Find nearest fruit
+local function getNearestFruit()
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+    local hrp = character.HumanoidRootPart
+    local nearestFruit, shortestDist = nil, math.huge
+
+    for _, fruit in ipairs(workspace:GetChildren()) do
+        if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+            local dist = (hrp.Position - fruit.Handle.Position).Magnitude
+            if dist < shortestDist then
+                nearestFruit = fruit
+                shortestDist = dist
+            end
+        end
+    end
+
+    return nearestFruit
+end
+
+-- Tween to fruit
+local isTweening = false
+local currentTween = nil
+local function tweenToNearestFruit()
+    if isTweening then return end
+    local fruit = getNearestFruit()
+    if not fruit then return end
+    local character = player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = character.HumanoidRootPart
+
+    isTweening = true
+    local goal = {CFrame = CFrame.new(fruit.Handle.Position + Vector3.new(0, 3, 0))}
+    local tweenInfo = TweenInfo.new((hrp.Position - fruit.Handle.Position).Magnitude / 80, Enum.EasingStyle.Linear)
+    currentTween = TweenService:Create(hrp, tweenInfo, goal)
+    currentTween:Play()
+
+    currentTween.Completed:Connect(function()
+        isTweening = false
+    end)
+end
+
+-- Fruit watch loop
+task.spawn(function()
+    local noFruitTime = 0
+    while task.wait(0.05) do
+        if not isTweening then
+            local fruit = getNearestFruit()
+            if fruit then
+                tweenToNearestFruit()
+                noFruitTime = 0
+            else
+                noFruitTime += 0.05
+                if noFruitTime >= 3 then
+                    Teleport()
+                    break
+                end
+            end
+        else
+            local fruit = getNearestFruit()
+            if not fruit or not fruit:FindFirstChild("Handle") then
+                if currentTween then currentTween:Cancel() end
+                isTweening = false
+            end
+        end
+    end
+end)
+
+-- Teleport functions
+local PlaceID = game.PlaceId
+local AllIDs = {}
+local foundAnything = ""
+local actualHour = os.date("!*t").hour
+
+local function TPReturner()
+    local Site
+    if foundAnything == "" then
+        Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'))
+    else
+        Site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100&cursor=' .. foundAnything))
+    end
+
+    local ID = ""
+    if Site.nextPageCursor and Site.nextPageCursor ~= "null" and Site.nextPageCursor ~= nil then
+        foundAnything = Site.nextPageCursor
+    end
+
+    local num = 0
+    for i, v in pairs(Site.data) do
+        local Possible = true
+        ID = tostring(v.id)
+        if tonumber(v.maxPlayers) > tonumber(v.playing) then
+            for _, Existing in pairs(AllIDs) do
+                if num ~= 0 and ID == tostring(Existing) then
+                    Possible = false
+                elseif tonumber(actualHour) ~= tonumber(Existing) then
+                    pcall(function()
+                        delfile("NotSameServers.json")
+                        AllIDs = {}
+                        table.insert(AllIDs, actualHour)
+                    end)
+                end
+                num += 1
+            end
+            if Possible then
+                table.insert(AllIDs, ID)
+                pcall(function()
+                    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+                    TeleportService:TeleportToPlaceInstance(PlaceID, ID, player)
+                end)
+                wait(4)
+                return true
+            end
+        end
+    end
+    return false
+end
+
+local isTeleporting = false
+function Teleport()
+    if isTeleporting then return end
+    isTeleporting = true
+    task.spawn(function()
+        while isTeleporting do
+            pcall(function()
+                TPReturner()
+                if foundAnything ~= "" then
+                    TPReturner()
+                end
+            end)
+            wait(1)
+        end
+    end)
+end
