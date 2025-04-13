@@ -30,7 +30,7 @@ spawn(function()
             game.StarterGui:SetCore("SendNotification", {
                 Title = "Server Hop",
                 Text = "No fruits found. Hopping...",
-                Duration = 2
+                Duration = 5
             })
             TeleportService:Teleport(PlaceId, player)
         end
