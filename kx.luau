@@ -180,7 +180,7 @@ local function createBillboard(fruit)
 
     local label = Instance.new("TextLabel")
     label.Text = fruit.Name
-    label.Size = UDim2.new(0.6, 0, 0.6, 0)
+    label.Size = UDim2.new(0.75, 0, 0.75, 0)
     label.BackgroundTransparency = 1
     label.TextColor3 = Color3.new(1, 1, 1)
     label.TextScaled = true
