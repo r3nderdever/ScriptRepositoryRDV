@@ -13,6 +13,21 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 local camera = Workspace.CurrentCamera
 
+-- Auto Marines
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local plr = Players.LocalPlayer
+
+local function JoinTeam()
+    -- Ensure the player has a valid team before checking
+    if not plr.Team or (plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates) then
+        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
+    end
+end
+
+-- Call the function
+JoinTeam()
+
 -- Webhook setup
 local webhook = "https://discord.com/api/webhooks/1355686213662802110/Zb2ToOaLRgzBq33aMO3Z4pAEId-d68akqQwwKQagx092AziDLneZYTgw9rOsHRbWdWTi"
 local function sendWebhook(title, desc)
