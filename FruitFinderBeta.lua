@@ -11,11 +11,15 @@ local lastFruitFound = tick()
 
 -- Update timestamp when fruit is detected
 local function updateFruitDetection()
+local lastFruitFound = tick()
+local initialSpawnTime = tick()
+
+local function updateFruitDetection()
     lastFruitFound = tick()
 end
 
--- Check for fruits every second
 spawn(function()
+    initialSpawnTime = tick() -- record spawn time
     while true do
         local foundFruit = false
         for _, fruit in ipairs(game.Workspace:GetChildren()) do
@@ -26,18 +30,21 @@ spawn(function()
             end
         end
 
-        if not foundFruit and (tick() - lastFruitFound) >= 2 then
+        -- Make sure at least 4 seconds have passed since spawning
+        if not foundFruit and (tick() - initialSpawnTime) >= 4 and (tick() - lastFruitFound) >= 4 then
             game.StarterGui:SetCore("SendNotification", {
                 Title = "Server Hop",
                 Text = "No fruits found. Hopping...",
                 Duration = 5
             })
             TeleportService:Teleport(PlaceId, player)
+            break  -- optional: stop loop after teleport
         end
 
         wait(0.2)
     end
 end)
+
 
 -- === AUTO TEAM JOIN ===
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
