@@ -180,9 +180,9 @@ local function createBillboard(fruit)
 
     local label = Instance.new("TextLabel")
     label.Text = fruit.Name
-    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Size = UDim2.new(0.6, 0, 0.6, 0)
     label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.new(1, 1, 0)
+    label.TextColor3 = Color3.new(1, 1, 1)
     label.TextScaled = true
     label.Font = Enum.Font.GothamBold
     label.Parent = bb
@@ -279,7 +279,7 @@ local rightButton2 = createStyledButton("ESP: " .. (savedSettings.ESP and "On" o
 leftButton1.MouseButton1Click:Connect(function()
     local fruit, dist = findNearestFruit()
     if fruit then
-        local tweenTime = dist / 200
+        local tweenTime = dist / 250
         leftButton1.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
         local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(fruit.Handle.Position)})
         local camConn = RunService.RenderStepped:Connect(function()
