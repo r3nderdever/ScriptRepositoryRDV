@@ -268,17 +268,62 @@ task.spawn(function()
 end)
 
 -- Buttons
+-- Ensure that createStyledButton is defined correctly before calling it
+local function createStyledButton(text, pos, color)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.1, 0, 0.08, 0)
+    btn.Position = pos
+    btn.BackgroundColor3 = color
+    btn.Text = text
+    btn.Font = Enum.Font.GothamBold
+    btn.TextScaled = true
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Parent = screenGui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        createButtonEffect(btn)
+    end)
+
+    return btn
+end
+
+-- Now create the buttons
+local leftButton1 = createStyledButton("Auto TP: Off", UDim2.new(0.35, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
+
+-- Initialize the autoTPEnabled state (assuming it's false initially)
+local autoTPEnabled = false
+
 -- Toggle Auto TP button
 leftButton1.Text = "Auto TP: Off"
 leftButton1.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
 
+-- Handle Auto TP button click
 leftButton1.MouseButton1Click:Connect(function()
-	autoTPEnabled = not autoTPEnabled
-	leftButton1.Text = "Auto TP: " .. (autoTPEnabled and "On" or "Off")
-	leftButton1.BackgroundColor3 = autoTPEnabled and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
-	createButtonEffect(leftButton1)
+    -- Toggle the state of autoTPEnabled
+    autoTPEnabled = not autoTPEnabled
+
+    -- Update button text and background color based on the state
+    leftButton1.Text = "Auto TP: " .. (autoTPEnabled and "On" or "Off")
+    leftButton1.BackgroundColor3 = autoTPEnabled and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+
+    -- Create the button effect
+    createButtonEffect(leftButton1)
+
+    -- Optional: Handle the Auto TP functionality here, for example:
+    if autoTPEnabled then
+        -- Start auto TP logic or any other actions when Auto TP is enabled
+        print("Auto TP Enabled!")
+    else
+        -- Stop auto TP logic or revert changes when Auto TP is disabled
+        print("Auto TP Disabled!")
+    end
 end)
 
+-- Create other buttons
 local leftButton2 = createStyledButton("Feedback", UDim2.new(0.225, 0, 0.01, 0), Color3.fromRGB(25, 25, 25))
 local rightButton1 = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.675, 0, 0.01, 0), Color3.fromRGB(100, 150, 255))
 local rightButton2 = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.8, 0, 0.01, 0), Color3.fromRGB(100, 255, 100))
