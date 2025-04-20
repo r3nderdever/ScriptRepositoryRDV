@@ -292,7 +292,7 @@ local function createStyledButton(text, pos, color)
 end
 
 -- Now create the buttons
-local leftButton1 = createStyledButton("Auto TP: Off", UDim2.new(0.35, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
+local leftButton1 = createStyledButton("Auto TP: Off", UDim2.new(0.475, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
 
 -- Initialize the autoTPEnabled state (assuming it's false initially)
 local autoTPEnabled = false
@@ -306,7 +306,7 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 print("ScreenGui Created: ", screenGui)
 
 -- Create the button
-local leftButton1 = createStyledButton("Auto TP: Off", UDim2.new(0.35, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
+local leftButton1 = createStyledButton("Auto TP: Off", UDim2.new(0.475, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
 
 -- Debug: Check if leftButton1 is created
 if leftButton1 then
