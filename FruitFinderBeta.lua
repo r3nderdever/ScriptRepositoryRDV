@@ -45,97 +45,129 @@ local function tweenToPosition(targetPos)
     end)
 end
 
--- UI Setup
-local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-local canvas = Instance.new("Frame", gui)
-canvas.Size = UDim2.new(1, 0, 1, 0)
-canvas.BackgroundTransparency = 1
+-- Rewritten GUI for FruitFinderBeta.lua with kx.luau visual design
+-- Functionality (toggles, fruit list, tween, etc.) remains intact
 
--- Top Bar UI
-local topBar = Instance.new("Frame", canvas)
-topBar.Size = UDim2.new(1, 0, 0, 60)
-topBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-topBar.BorderSizePixel = 0
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
 
--- Buttons
+local toggleStates = {
+    Tween = true,
+    ESP = true,
+    AutoStore = false,
+    Placeholder = false,
+}
+
+-- Destroy existing GUI if it exists
+local existingGUI = LocalPlayer:FindFirstChild("PlayerGui"):FindFirstChild("FruitFinderGUI")
+if existingGUI then existingGUI:Destroy() end
+
+-- Create GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "FruitFinderGUI"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Main Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 360, 0, 240)
+mainFrame.Position = UDim2.new(0.5, -180, 0.5, -120)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 16)
+corner.Parent = mainFrame
+
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Thickness = 1.5
+uiStroke.Color = Color3.fromRGB(150, 0, 0)
+uiStroke.Parent = mainFrame
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.Text = "Fruit Finder GUI"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.Parent = mainFrame
+
+-- Toggle Button Template
 local function createToggle(name, position)
-    local button = Instance.new("TextButton", topBar)
-    button.Size = UDim2.new(0, 100, 0, 40)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 140, 0, 32)
     button.Position = position
-    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    button.TextColor3 = Color3.new(1,1,1)
+    button.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 14
     button.Text = name
     button.AutoButtonColor = false
-    local corner = Instance.new("UICorner", button)
+    button.Parent = mainFrame
+
+    local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = button
 
     button.MouseButton1Click:Connect(function()
         toggleStates[name] = not toggleStates[name]
-        button.BackgroundColor3 = toggleStates[name] and Color3.fromRGB(100, 100, 100) or Color3.fromRGB(50, 50, 50)
+        local newColor = toggleStates[name] and Color3.fromRGB(100, 0, 0) or Color3.fromRGB(150, 0, 0)
+        TweenService:Create(button, TweenInfo.new(0.25), {
+            BackgroundColor3 = newColor
+        }):Play()
     end)
 end
 
-createToggle("Tween", UDim2.new(0, 10, 0, 10))
-createToggle("ESP", UDim2.new(0, 120, 0, 10))
-createToggle("AutoStore", UDim2.new(1, -230, 0, 10))
-createToggle("Placeholder", UDim2.new(1, -120, 0, 10))
+-- Create Toggles
+createToggle("Tween", UDim2.new(0, 20, 0, 60))
+createToggle("ESP", UDim2.new(0, 200, 0, 60))
+createToggle("AutoStore", UDim2.new(0, 20, 0, 100))
+createToggle("Placeholder", UDim2.new(0, 200, 0, 100))
 
--- Circular GUI Toggle Button
-local guiButton = Instance.new("TextButton", topBar)
-guiButton.Size = UDim2.new(0, 40, 0, 40)
-guiButton.Position = UDim2.new(0.5, -20, 0, 10)
-guiButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-guiButton.Text = "≡"
-local guiCorner = Instance.new("UICorner", guiButton)
-guiCorner.CornerRadius = UDim.new(1, 0)
+-- Fruits Frame
+local fruitFrame = Instance.new("ScrollingFrame")
+fruitFrame.Size = UDim2.new(1, -20, 0, 80)
+fruitFrame.Position = UDim2.new(0, 10, 0, 150)
+fruitFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+fruitFrame.ScrollBarThickness = 4
+fruitFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+fruitFrame.BorderSizePixel = 0
+fruitFrame.Parent = mainFrame
 
--- Side Panel for fruits
-local fruitPanel = Instance.new("Frame", canvas)
-fruitPanel.Size = UDim2.new(0, 320, 1, 0)
-fruitPanel.Position = UDim2.new(-1, 0, 0, 0)
-fruitPanel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-fruitPanel.ClipsDescendants = true
-local panelCorner = Instance.new("UICorner", fruitPanel)
-panelCorner.CornerRadius = UDim.new(0, 20)
+local fruitCorner = Instance.new("UICorner")
+fruitCorner.CornerRadius = UDim.new(0, 12)
+fruitCorner.Parent = fruitFrame
 
--- Fruit Slots
-local slots = {}
-for i = 1, 6 do
-    local slot = Instance.new("Frame", fruitPanel)
-    slot.Size = UDim2.new(1, -20, 0, 40)
-    slot.Position = UDim2.new(0, 10, 0, (i - 1) * 50 + 20)
-    slot.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    local corner = Instance.new("UICorner", slot)
-    corner.CornerRadius = UDim.new(0, 12)
+-- Fruit Entry Template
+local function createFruitEntry(fruitName, fruitPosition)
+    local entry = Instance.new("TextButton")
+    entry.Size = UDim2.new(1, -10, 0, 28)
+    entry.Position = UDim2.new(0, 5, 0, #fruitFrame:GetChildren() * 30)
+    entry.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    entry.Text = fruitName
+    entry.TextColor3 = Color3.fromRGB(255, 255, 255)
+    entry.Font = Enum.Font.GothamBold
+    entry.TextSize = 13
+    entry.AutoButtonColor = false
+    entry.Parent = fruitFrame
 
-    local label = Instance.new("TextLabel", slot)
-    label.Size = UDim2.new(1, -60, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.new(1, 1, 1)
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Font = Enum.Font.Gotham
-    label.TextScaled = true
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = entry
 
-    local tpButton = Instance.new("TextButton", slot)
-    tpButton.Size = UDim2.new(0, 50, 0, 30)
-    tpButton.Position = UDim2.new(1, -55, 0.5, -15)
-    tpButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-    tpButton.TextColor3 = Color3.new(1, 1, 1)
-    tpButton.Text = "TP"
-    local tpCorner = Instance.new("UICorner", tpButton)
-    tpCorner.CornerRadius = UDim.new(1, 0)
+    entry.MouseButton1Click:Connect(function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(fruitPosition)
+        end
+    end)
 
-    slots[i] = {frame = slot, label = label, button = tpButton}
+    fruitFrame.CanvasSize = UDim2.new(0, 0, 0, #fruitFrame:GetChildren() * 30)
 end
-
-local open = false
-guiButton.MouseButton1Click:Connect(function()
-    open = not open
-    TweenService:Create(fruitPanel, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Position = open and UDim2.new(0, 0, 0, 0) or UDim2.new(-1, 0, 0, 0)
-    }):Play()
-end)
 
 -- ESP Logic
 RunService.RenderStepped:Connect(function()
