@@ -54,34 +54,31 @@ canvas.BackgroundTransparency = 1
 -- Top Bar UI
 local topBar = Instance.new("Frame", canvas)
 topBar.Size = UDim2.new(1, 0, 0, 60)
-topBar.BackgroundTransparency = 1
+topBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 topBar.BorderSizePixel = 0
 
 -- Buttons
-local function createToggle(name, position, color)
+local function createToggle(name, position)
     local button = Instance.new("TextButton", topBar)
-    button.Size = UDim2.new(0, 80, 0, 32)
+    button.Size = UDim2.new(0, 100, 0, 40)
     button.Position = position
-    button.BackgroundColor3 = color or Color3.fromRGB(50, 50, 50)
+    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     button.TextColor3 = Color3.new(1,1,1)
     button.Text = name
     button.AutoButtonColor = false
-    button.Font = Enum.Font.Gotham
-    button.TextScaled = true
-    button.TextSize = 0 -- Ensures TextScaled is used properly
     local corner = Instance.new("UICorner", button)
     corner.CornerRadius = UDim.new(1, 0)
 
     button.MouseButton1Click:Connect(function()
         toggleStates[name] = not toggleStates[name]
-        button.BackgroundColor3 = toggleStates[name] and color:Lerp(Color3.new(1, 1, 1), 0.3) or color
+        button.BackgroundColor3 = toggleStates[name] and Color3.fromRGB(100, 100, 100) or Color3.fromRGB(50, 50, 50)
     end)
 end
 
-createToggle("Tween", UDim2.new(0, 10, 0, 10), Color3.fromRGB(255, 0, 0))
-createToggle("ESP", UDim2.new(0, 100, 0, 10), Color3.fromRGB(0, 255, 0))
-createToggle("AutoStore", UDim2.new(0, 190, 0, 10), Color3.fromRGB(128, 0, 128))
-createToggle("Placeholder", UDim2.new(0, 280, 0, 10), Color3.fromRGB(100, 100, 100))
+createToggle("Tween", UDim2.new(0, 150, 0, 10))
+createToggle("ESP", UDim2.new(0, 250, 0, 10))
+createToggle("AutoStore", UDim2.new(1, -370, 0, 10))
+createToggle("Placeholder", UDim2.new(1, -260, 0, 10))
 
 -- Circular GUI Toggle Button
 local guiButton = Instance.new("TextButton", topBar)
@@ -89,8 +86,6 @@ guiButton.Size = UDim2.new(0, 40, 0, 40)
 guiButton.Position = UDim2.new(0.5, -20, 0, 10)
 guiButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 guiButton.Text = "≡"
-guiButton.Font = Enum.Font.Gotham
-guiButton.TextScaled = true
 local guiCorner = Instance.new("UICorner", guiButton)
 guiCorner.CornerRadius = UDim.new(1, 0)
 
@@ -128,8 +123,6 @@ for i = 1, 6 do
     tpButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
     tpButton.TextColor3 = Color3.new(1, 1, 1)
     tpButton.Text = "TP"
-    tpButton.Font = Enum.Font.Gotham
-    tpButton.TextScaled = true
     local tpCorner = Instance.new("UICorner", tpButton)
     tpCorner.CornerRadius = UDim.new(1, 0)
 
