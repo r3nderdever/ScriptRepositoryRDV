@@ -90,7 +90,7 @@ guiButton.Text = "≡"
 guiButton.TextSize = 36  -- Double the default size (14 x 2)
 guiButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- 100% white
 local guiCorner = Instance.new("UICorner", guiButton)
-guiCorner.CornerRadius = UDim.new(1, 0)
+guiCorner.CornerRadius = UDim.new(0.75, 0)
 
 -- Side Panel for fruits
 local fruitPanel = Instance.new("Frame", canvas)
