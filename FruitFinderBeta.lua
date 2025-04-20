@@ -1,127 +1,3 @@
--- Combined additions
--- 1. Server hop logic after 2 seconds of no fruits
--- 2. Auto team join (Marines)
-
--- === SERVER HOP ===
-local TeleportService = game:GetService("TeleportService")
-local HttpService = game:GetService("HttpService")
-local PlaceId = game.PlaceId
-local player = game:GetService("Players").LocalPlayer
-local lastFruitFound = tick()
-
--- Update timestamp when fruit is detected
-local function updateFruitDetection()
-local lastFruitFound = tick()
-local initialSpawnTime = tick()
-
-local function updateFruitDetection()
-    lastFruitFound = tick()
-end
-
-spawn(function()
-    initialSpawnTime = tick() -- record spawn time
-    while true do
-        local foundFruit = false
-        for _, fruit in ipairs(game.Workspace:GetChildren()) do
-            if fruit:IsA("Tool") and fruit:FindFirstChild("Handle") and fruit.Name:lower():find("fruit") then
-                foundFruit = true
-                updateFruitDetection()
-                break
-            end
-        end
-
-        -- Make sure at least 4 seconds have passed since spawning
-        if not foundFruit and (tick() - initialSpawnTime) >= 4 and (tick() - lastFruitFound) >= 4 then
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "Server Hop",
-                Text = "No fruits found. Hopping...",
-                Duration = 5
-            })
-            TeleportService:Teleport(PlaceId, player)
-            break  -- optional: stop loop after teleport
-        end
-
-        wait(0.2)
-    end
-end)
-
-
--- === AUTO TEAM JOIN ===
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local plr = game.Players.LocalPlayer
-
-local function JoinTeam()
-    if not plr.Team or (plr.Team ~= game.Teams.Marines and plr.Team ~= game.Teams.Pirates) then
-        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer("SetTeam", "Marines")
-    end
-end
-
-JoinTeam()
-
--- === AUTO TWEEN TO NEAREST FRUIT ===
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-local camera = game.Workspace.CurrentCamera
-
-local isTweening = false
-
-local function tweenToFruit(fruit)
-    if isTweening or not fruit or not fruit:FindFirstChild("Handle") then return end
-    isTweening = true
-
-    local distance = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
-    local tweenTime = distance / 250
-    local goal = {CFrame = CFrame.new(fruit.Handle.Position + Vector3.new(0, 3, 0))}
-    local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), goal)
-
-    local camConn = RunService.RenderStepped:Connect(function()
-        camera.CFrame = humanoidRootPart.CFrame + Vector3.new(0, 5, 10)
-    end)
-
-    tween:Play()
-    tween.Completed:Connect(function()
-        camConn:Disconnect()
-        isTweening = false
-    end)
-end
-
--- Monitor for fruit and tween to nearest
-spawn(function()
-    while true do
-        if not isTweening then
-            local nearest = nil
-            local shortest = math.huge
-            for _, fruit in ipairs(workspace:GetChildren()) do
-                if fruit:IsA("Tool") and fruit:FindFirstChild("Handle") and fruit.Name:lower():find("fruit") then
-                    local dist = (humanoidRootPart.Position - fruit.Handle.Position).Magnitude
-                    if dist < shortest then
-                        nearest = fruit
-                        shortest = dist
-                    end
-                end
-            end
-            if nearest then
-                tweenToFruit(nearest)
-            end
-        end
-        wait(1)
-    end
-end)
-
--- Auto-store loop (every 0.1s) — no checks, just fires constantly
-spawn(function()
-    while true do
-        pcall(function()
-            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", "Random", "Random")
-        end)
-        wait(0.1)
-    end
-end)
-
--- === MAIN SCRIPT CONTINUES BELOW ===
-
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -362,47 +238,108 @@ spawn(function()
     end
 end)
 
--- Auto Store
+-- Auto Store function
 local function autoStore()
+    -- Only proceed if AutoStore is enabled in the saved settings
     if not savedSettings.AutoStore then return end
+
+    -- Wait for the player's Backpack to exist
     local backpack = player:WaitForChild("Backpack")
+
+    -- Iterate through all tools in the Backpack
     for _, tool in ipairs(backpack:GetChildren()) do
+        -- Check if the tool is a "Tool" object and its name contains "Fruit"
         if tool:IsA("Tool") and tool.Name:find("Fruit") then
+            -- Get the original name of the tool or default to its current name
             local original = tool:GetAttribute("OriginalName") or tool.Name
+
+            -- Call the server function to store the fruit tool
             game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", original, tool)
         end
     end
 end
 
+-- Continuously call the autoStore function every 0.04 seconds
 task.spawn(function()
     while true do
-        autoStore()
-        task.wait(0.04)
+        autoStore()  -- Execute autoStore to store fruit tools
+        task.wait(0.04)  -- Wait for 0.04 seconds before running again
     end
 end)
 
 -- Buttons
-local leftButton1 = createStyledButton("TP", UDim2.new(0.1, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
+-- Toggle Auto TP button
+leftButton1.Text = "Auto TP: Off"
+leftButton1.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+
+leftButton1.MouseButton1Click:Connect(function()
+	autoTPEnabled = not autoTPEnabled
+	leftButton1.Text = "Auto TP: " .. (autoTPEnabled and "On" or "Off")
+	leftButton1.BackgroundColor3 = autoTPEnabled and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+	createButtonEffect(leftButton1)
+end)
+
 local leftButton2 = createStyledButton("Feedback", UDim2.new(0.225, 0, 0.01, 0), Color3.fromRGB(25, 25, 25))
 local rightButton1 = createStyledButton("AutoStore: " .. (savedSettings.AutoStore and "On" or "Off"), UDim2.new(0.675, 0, 0.01, 0), Color3.fromRGB(100, 150, 255))
 local rightButton2 = createStyledButton("ESP: " .. (savedSettings.ESP and "On" or "Off"), UDim2.new(0.8, 0, 0.01, 0), Color3.fromRGB(100, 255, 100))
 
 -- Button Logic
-leftButton1.MouseButton1Click:Connect(function()
-    local fruit, dist = findNearestFruit()
-    if fruit then
-        local tweenTime = dist / 200
-        leftButton1.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-        local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(fruit.Handle.Position)})
-        local camConn = RunService.RenderStepped:Connect(function()
-            camera.CFrame = humanoidRootPart.CFrame
-        end)
-        tween.Completed:Connect(function()
-            camConn:Disconnect()
-            leftButton1.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-        end)
-        tween:Play()
-    end
+-- Auto TP logic
+local autoTPEnabled = false
+local tweening = false
+
+local lines = {} -- store Drawing objects for fruit lines
+
+-- Function to clear old lines
+local function clearLines()
+	for _, line in pairs(lines) do
+		if line and line.Remove then
+			line:Remove()
+		end
+	end
+	table.clear(lines)
+end
+
+-- Draw lines to all fruits
+local function drawLines()
+	clearLines()
+	for _, fruit in ipairs(Workspace:GetChildren()) do
+		if table.find(fruitsList, fruit.Name) and fruit:FindFirstChild("Handle") then
+			local line = Drawing.new("Line")
+			line.Thickness = 2
+			line.Color = Color3.fromRGB(255, 255, 0)
+			line.Visible = true
+			line.From = camera:WorldToViewportPoint(humanoidRootPart.Position)
+			line.To = camera:WorldToViewportPoint(fruit.Handle.Position)
+			table.insert(lines, line)
+		end
+	end
+end
+
+-- Auto TP coroutine
+task.spawn(function()
+	while true do
+		if autoTPEnabled and not tweening then
+			local fruit, dist = findNearestFruit()
+			if fruit then
+				tweening = true
+				local tweenTime = dist / 250
+				local goal = {CFrame = CFrame.new(fruit.Handle.Position)}
+				local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), goal)
+				local camConn = RunService.RenderStepped:Connect(function()
+					camera.CFrame = humanoidRootPart.CFrame
+					drawLines()
+				end)
+				tween:Play()
+				tween.Completed:Connect(function()
+					camConn:Disconnect()
+					tweening = false
+					clearLines()
+				end)
+			end
+		end
+		task.wait(0.1)
+	end
 end)
 
 rightButton1.MouseButton1Click:Connect(function()
