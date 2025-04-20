@@ -298,30 +298,36 @@ local leftButton1 = createStyledButton("Auto TP: Off", UDim2.new(0.35, 0, 0.01, 
 local autoTPEnabled = false
 
 -- Toggle Auto TP button
-leftButton1.Text = "Auto TP: Off"
-leftButton1.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+-- Ensure that screenGui is created
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
--- Handle Auto TP button click
-leftButton1.MouseButton1Click:Connect(function()
-    -- Toggle the state of autoTPEnabled
-    autoTPEnabled = not autoTPEnabled
+-- Debug: Check if screenGui is created correctly
+print("ScreenGui Created: ", screenGui)
 
-    -- Update button text and background color based on the state
-    leftButton1.Text = "Auto TP: " .. (autoTPEnabled and "On" or "Off")
-    leftButton1.BackgroundColor3 = autoTPEnabled and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+-- Create the button
+local leftButton1 = createStyledButton("Auto TP: Off", UDim2.new(0.35, 0, 0.01, 0), Color3.fromRGB(255, 100, 100))
 
-    -- Create the button effect
-    createButtonEffect(leftButton1)
+-- Debug: Check if leftButton1 is created
+if leftButton1 then
+    print("leftButton1 Created: ", leftButton1)
+else
+    print("Error: leftButton1 is nil!")
+end
 
-    -- Optional: Handle the Auto TP functionality here, for example:
-    if autoTPEnabled then
-        -- Start auto TP logic or any other actions when Auto TP is enabled
-        print("Auto TP Enabled!")
-    else
-        -- Stop auto TP logic or revert changes when Auto TP is disabled
-        print("Auto TP Disabled!")
-    end
-end)
+-- Now, handle the Auto TP button logic
+if leftButton1 then
+    leftButton1.Text = "Auto TP: Off"
+    leftButton1.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+
+    -- Toggle Auto TP button
+    leftButton1.MouseButton1Click:Connect(function()
+        autoTPEnabled = not autoTPEnabled
+        leftButton1.Text = "Auto TP: " .. (autoTPEnabled and "On" or "Off")
+        leftButton1.BackgroundColor3 = autoTPEnabled and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(255, 100, 100)
+        createButtonEffect(leftButton1)
+    end)
+end
 
 -- Create other buttons
 local leftButton2 = createStyledButton("Feedback", UDim2.new(0.225, 0, 0.01, 0), Color3.fromRGB(25, 25, 25))
