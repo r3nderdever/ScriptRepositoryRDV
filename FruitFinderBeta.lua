@@ -54,31 +54,40 @@ canvas.BackgroundTransparency = 1
 -- Top Bar UI
 local topBar = Instance.new("Frame", canvas)
 topBar.Size = UDim2.new(1, 0, 0, 60)
-topBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+topBar.BackgroundTransparency = 1
 topBar.BorderSizePixel = 0
 
 -- Buttons
+local buttonColors = {
+    Tween = Color3.fromRGB(255, 0, 0),
+    ESP = Color3.fromRGB(0, 255, 0),
+    AutoStore = Color3.fromRGB(128, 0, 128),
+    Placeholder = Color3.fromRGB(128, 128, 128)
+}
+
 local function createToggle(name, position)
     local button = Instance.new("TextButton", topBar)
-    button.Size = UDim2.new(0, 100, 0, 40)
+    button.Size = UDim2.new(0, 80, 0, 32)
     button.Position = position
-    button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    button.BackgroundColor3 = buttonColors[name] or Color3.fromRGB(50, 50, 50)
     button.TextColor3 = Color3.new(1,1,1)
     button.Text = name
     button.AutoButtonColor = false
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 28
     local corner = Instance.new("UICorner", button)
     corner.CornerRadius = UDim.new(1, 0)
 
     button.MouseButton1Click:Connect(function()
         toggleStates[name] = not toggleStates[name]
-        button.BackgroundColor3 = toggleStates[name] and Color3.fromRGB(100, 100, 100) or Color3.fromRGB(50, 50, 50)
+        button.BackgroundTransparency = toggleStates[name] and 0 or 0.4
     end)
 end
 
-createToggle("Tween", UDim2.new(0, 10, 0, 10))
-createToggle("ESP", UDim2.new(0, 120, 0, 10))
-createToggle("AutoStore", UDim2.new(1, -230, 0, 10))
-createToggle("Placeholder", UDim2.new(1, -120, 0, 10))
+createToggle("Tween", UDim2.new(0.25, -100, 0, 10))
+createToggle("ESP", UDim2.new(0.25, 0, 0, 10))
+createToggle("AutoStore", UDim2.new(0.75, -160, 0, 10))
+createToggle("Placeholder", UDim2.new(0.75, -80, 0, 10))
 
 -- Circular GUI Toggle Button
 local guiButton = Instance.new("TextButton", topBar)
@@ -91,8 +100,8 @@ guiCorner.CornerRadius = UDim.new(1, 0)
 
 -- Side Panel for fruits
 local fruitPanel = Instance.new("Frame", canvas)
-fruitPanel.Size = UDim2.new(0, 320, 1, 0)
-fruitPanel.Position = UDim2.new(-1, 0, 0, 0)
+fruitPanel.Size = UDim2.new(0, 320, 0, 340)
+fruitPanel.Position = UDim2.new(-1, 0, 0, 60)
 fruitPanel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 fruitPanel.ClipsDescendants = true
 local panelCorner = Instance.new("UICorner", fruitPanel)
@@ -103,7 +112,7 @@ local slots = {}
 for i = 1, 6 do
     local slot = Instance.new("Frame", fruitPanel)
     slot.Size = UDim2.new(1, -20, 0, 40)
-    slot.Position = UDim2.new(0, 10, 0, (i - 1) * 50 + 20)
+    slot.Position = UDim2.new(0, 10, 0, (i - 1) * 50 + 10)
     slot.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     local corner = Instance.new("UICorner", slot)
     corner.CornerRadius = UDim.new(0, 12)
@@ -133,7 +142,7 @@ local open = false
 guiButton.MouseButton1Click:Connect(function()
     open = not open
     TweenService:Create(fruitPanel, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Position = open and UDim2.new(0, 0, 0, 0) or UDim2.new(-1, 0, 0, 0)
+        Position = open and UDim2.new(0, 0, 0, 60) or UDim2.new(-1, 0, 0, 60)
     }):Play()
 end)
 
