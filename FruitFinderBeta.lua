@@ -126,7 +126,7 @@ frame.ClipsDescendants = true
 frame.ZIndex = 1
 
 local uiCorner = Instance.new("UICorner")
-uiCorner.CornerRadius = UDim.new(0.2, 0)
+uiCorner.CornerRadius = UDim.new(1, 0)
 uiCorner.Parent = frame
 
 local fruitLabel = Instance.new("TextLabel")
