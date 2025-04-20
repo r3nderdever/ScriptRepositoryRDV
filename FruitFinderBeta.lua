@@ -62,6 +62,8 @@ local function JoinTeam()
     end
 end
 
+JoinTeam()
+
 -- UI Setup
 local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = player:WaitForChild("PlayerGui")
