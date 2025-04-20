@@ -132,7 +132,7 @@ end
 local open = false
 guiButton.MouseButton1Click:Connect(function()
     open = not open
-    TweenService:Create(fruitPanel, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    TweenService:Create(fruitPanel, TweenInfo.new(1.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Position = open and UDim2.new(0, 0, 0, 0) or UDim2.new(-1, 0, 0, 0)
     }):Play()
 end)
