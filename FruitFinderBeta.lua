@@ -65,7 +65,7 @@ local function createToggle(name, position)
     button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     button.TextColor3 = Color3.new(1,1,1)
     button.Text = name
-    button.TextSize = 32
+    button.TextSize = 16
     button.AutoButtonColor = false
     local corner = Instance.new("UICorner", button)
     corner.CornerRadius = UDim.new(0.75, 0)
@@ -87,7 +87,7 @@ guiButton.Size = UDim2.new(0, 30, 0, 30)
 guiButton.Position = UDim2.new(0.5, -20, 0, 10)
 guiButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 guiButton.Text = "≡"
-guiButton.TextSize = 36  -- Double the default size (14 x 2)
+guiButton.TextSize = 18  -- Double the default size (14 x 2)
 guiButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- 100% white
 local guiCorner = Instance.new("UICorner", guiButton)
 guiCorner.CornerRadius = UDim.new(0.75, 0)
