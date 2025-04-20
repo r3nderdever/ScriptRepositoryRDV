@@ -38,7 +38,7 @@ local function tweenToPosition(targetPos)
     isTweening = true
     local distance = (humanoidRootPart.Position - targetPos).Magnitude
     local tweenTime = distance / 250
-    local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime), {CFrame = CFrame.new(targetPos)})
+    local tween = TweenService:Create(humanoidRootPart, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
     tween:Play()
     tween.Completed:Connect(function()
         isTweening = false
@@ -48,26 +48,27 @@ end
 -- UI Setup
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 local canvas = Instance.new("Frame", gui)
-canvas.Size = UDim2.new(1, 0, 1, 0)
+canvas.Size = UDim2.new(0.75, 0, 0.75, 0)
 canvas.BackgroundTransparency = 1
 
 -- Top Bar UI
 local topBar = Instance.new("Frame", canvas)
-topBar.Size = UDim2.new(1, 0, 0, 60)
+topBar.Size = UDim2.new(0, 0, 0, 0)
 topBar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 topBar.BorderSizePixel = 0
 
 -- Buttons
 local function createToggle(name, position)
     local button = Instance.new("TextButton", topBar)
-    button.Size = UDim2.new(0, 100, 0, 40)
+    button.Size = UDim2.new(0, 75, 0, 30)
     button.Position = position
     button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     button.TextColor3 = Color3.new(1,1,1)
     button.Text = name
+    button.TextSize = 32
     button.AutoButtonColor = false
     local corner = Instance.new("UICorner", button)
-    corner.CornerRadius = UDim.new(1, 0)
+    corner.CornerRadius = UDim.new(0.75, 0)
 
     button.MouseButton1Click:Connect(function()
         toggleStates[name] = not toggleStates[name]
@@ -76,16 +77,18 @@ local function createToggle(name, position)
 end
 
 createToggle("Tween", UDim2.new(0, 150, 0, 10))
-createToggle("ESP", UDim2.new(0, 250, 0, 10))
+createToggle("ESP", UDim2.new(0, 260, 0, 10))
 createToggle("AutoStore", UDim2.new(1, -370, 0, 10))
 createToggle("Placeholder", UDim2.new(1, -260, 0, 10))
 
 -- Circular GUI Toggle Button
 local guiButton = Instance.new("TextButton", topBar)
-guiButton.Size = UDim2.new(0, 40, 0, 40)
+guiButton.Size = UDim2.new(0, 30, 0, 30)
 guiButton.Position = UDim2.new(0.5, -20, 0, 10)
 guiButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 guiButton.Text = "≡"
+guiButton.TextSize = 36  -- Double the default size (14 x 2)
+guiButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- 100% white
 local guiCorner = Instance.new("UICorner", guiButton)
 guiCorner.CornerRadius = UDim.new(1, 0)
 
@@ -132,7 +135,7 @@ end
 local open = false
 guiButton.MouseButton1Click:Connect(function()
     open = not open
-    TweenService:Create(fruitPanel, TweenInfo.new(1.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    TweenService:Create(fruitPanel, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Position = open and UDim2.new(0, 0, 0, 0) or UDim2.new(-1, 0, 0, 0)
     }):Play()
 end)
