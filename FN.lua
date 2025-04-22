@@ -95,6 +95,6 @@ end
 task.spawn(function()
     while true do
         checkForChanges()
-        task.wait(1)
+        task.wait(0.085)
     end
 end)
