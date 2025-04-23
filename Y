@@ -35,6 +35,7 @@ local QuestTab = Window:CreateTab("Auto Quest", 123457)
 local PvPTab = Window:CreateTab("PvP", 123458)
 local TeleportTab = Window:CreateTab("Teleport", 123459)
 local SettingsTab = Window:CreateTab("Settings", 123460)
+local HakiTab = Window:CreateTab("Haki", 123461)
 
 -- Settings Toggles
 SettingsTab:CreateToggle({
