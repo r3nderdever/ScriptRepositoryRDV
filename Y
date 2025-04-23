@@ -1,48 +1,25 @@
-local Rayfield
-pcall(function()
-    Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-end)
+-- Enable Secure Mode for Rayfield
+getgenv().SecureMode = true
 
--- Check if Rayfield is loaded correctly
-if not Rayfield then
-    warn("Rayfield library failed to load. Please check the URL or your connection.")
-    return
-end
+-- Load Rayfield UI Library
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
---// UI Setup
-local Name = "Ultimate Blox Fruits Hub"
-local LoadingTitle = "Loading..."
-local LoadingSubtitle = "by R3nderDV"
-local FolderName = "BloxFruitsHub"
-local FileName = "MainConfig"
-
--- Debugging prints
-print("Name:", Name)
-print("LoadingTitle:", LoadingTitle)
-print("LoadingSubtitle:", LoadingSubtitle)
-print("FolderName:", FolderName)
-print("FileName:", FileName)
-
--- Check for nil values before creating the window
-if not Name or not LoadingTitle or not LoadingSubtitle or not FolderName or not FileName then
-    warn("One or more of the window parameters are nil.")
-    return
-end
-
--- Create Window
+-- Create the main window
 local Window = Rayfield:CreateWindow({
-    Name = Name,
-    LoadingTitle = LoadingTitle,
-    LoadingSubtitle = LoadingSubtitle,
+    Name = "Ultimate Blox Fruits Exploit Hub",
+    LoadingTitle = "Initializing...",
+    LoadingSubtitle = "Please wait",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = FolderName,
-        FileName = FileName
+        FolderName = "BloxFruitsHub",
+        FileName = "Config"
     },
     Discord = {
-        Enabled = false
+        Enabled = false,
+        Invite = "",
+        RememberJoins = true
     },
-    KeySystem = false,
+    KeySystem = false
 })
 
 -- Tabs
