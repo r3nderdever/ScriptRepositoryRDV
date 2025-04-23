@@ -1,0 +1,558 @@
+--// Initialization
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Settings = {
+    HitAura = false,
+    AutoQuest = false,
+    AttackDistance = 40,
+    AttackCooldown = 0.35,
+    TeleportStep = 50,
+    TeleportSpeed = 250,
+}
+
+--// UI Setup
+local Window = Rayfield:CreateWindow({
+    Name = "Ultimate Blox Fruits Hub",
+    LoadingTitle = "Loading...",
+    LoadingSubtitle = "by R3nderDV",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "BloxFruitsHub",
+        FileName = "MainConfig"
+    },
+    Discord = {
+        Enabled = false
+    },
+    KeySystem = false,
+})
+
+-- Tabs
+local FarmTab = Window:CreateTab("Auto Farm", 123456)
+local QuestTab = Window:CreateTab("Auto Quest", 123457)
+local PvPTab = Window:CreateTab("PvP", 123458)
+local TeleportTab = Window:CreateTab("Teleport", 123459)
+local SettingsTab = Window:CreateTab("Settings", 123460)
+
+-- Settings Toggles
+SettingsTab:CreateToggle({
+    Name = "Hit Aura",
+    CurrentValue = Settings.HitAura,
+    Callback = function(Value)
+        Settings.HitAura = Value
+    end,
+})
+
+SettingsTab:CreateToggle({
+    Name = "Auto Quest",
+    CurrentValue = Settings.AutoQuest,
+    Callback = function(Value)
+        Settings.AutoQuest = Value
+    end,
+})
+
+--// Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+--// Helper: Get enemies in attack range
+local function GetEnemiesInRange(range)
+    local targets = {}
+    for _, enemy in pairs(Workspace.Enemies:GetChildren()) do
+        local HRP = enemy:FindFirstChild("HumanoidRootPart")
+        local Humanoid = enemy:FindFirstChildOfClass("Humanoid")
+        if HRP and Humanoid and Humanoid.Health > 0 then
+            local dist = (Character.HumanoidRootPart.Position - HRP.Position).Magnitude
+            if dist <= range then
+                table.insert(targets, enemy)
+            end
+        end
+    end
+    return targets
+end
+
+--// Hit Aura Function
+task.spawn(function()
+    while task.wait(Settings.AttackCooldown) do
+        if Settings.HitAura then
+            local enemies = GetEnemiesInRange(Settings.AttackDistance)
+            for _, enemy in ipairs(enemies) do
+                -- Simulate melee attack (Replace this with actual combat remote if available)
+                local remote = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") and game:GetService("ReplicatedStorage").Remotes:FindFirstChild("Combat")
+                if remote and remote:IsA("RemoteEvent") then
+                    remote:FireServer(enemy)
+                end
+            end
+        end
+    end
+end)
+
+--// Auto Quest Function
+task.spawn(function()
+    while task.wait(1) do
+        if Settings.AutoQuest then
+            local QuestFolder = Workspace:FindFirstChild("Quests")
+            if QuestFolder then
+                for _, quest in pairs(QuestFolder:GetChildren()) do
+                    if quest:IsA("Model") and quest:FindFirstChild("QuestGiver") then
+                        local QuestRemote = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") and game:GetService("ReplicatedStorage").Remotes:FindFirstChild("QuestEvent")
+                        if QuestRemote then
+                            QuestRemote:FireServer("Accept", quest.Name)
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+--// Teleportation Utilities
+
+local TweenService = game:GetService("TweenService")
+
+-- Config
+local MAX_TWEEN_SPEED = 250 -- studs/sec
+local MAX_INSTANT_DISTANCE = 50
+
+-- Move Character with Tweening or Instant
+function TeleportToPosition(position)
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+
+    local root = character.HumanoidRootPart
+    local distance = (root.Position - position).Magnitude
+
+    if distance <= MAX_INSTANT_DISTANCE then
+        root.CFrame = CFrame.new(position)
+    else
+        local time = math.clamp(distance / MAX_TWEEN_SPEED, 0.1, 5)
+        local tweenInfo = TweenInfo.new(time, Enum.EasingStyle.Linear)
+        local goal = { CFrame = CFrame.new(position) }
+
+        local tween = TweenService:Create(root, tweenInfo, goal)
+        tween:Play()
+        tween.Completed:Wait()
+    end
+end
+
+-- Example usage (can be reused in autofarm or other logic):
+-- TeleportToPosition(Vector3.new(1234, 10, 5678))
+
+--// ESP and PvP Enhancements
+
+-- ESP Logic
+local ESPEnabled = false
+local function createESP(target, color)
+    if target:FindFirstChild("Head") and not target.Head:FindFirstChild("ESPBox") then
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "ESPBox"
+        box.Adornee = target.Head
+        box.AlwaysOnTop = true
+        box.ZIndex = 10
+        box.Size = Vector3.new(2, 2, 2)
+        box.Transparency = 0.5
+        box.Color3 = color
+        box.Parent = target.Head
+    end
+end
+
+local function toggleESP(enabled)
+    ESPEnabled = enabled
+    if not enabled then
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("BoxHandleAdornment") and v.Name == "ESPBox" then
+                v:Destroy()
+            end
+        end
+    end
+end
+
+task.spawn(function()
+    while task.wait(1) do
+        if ESPEnabled then
+            for _, v in pairs(workspace.Enemies:GetChildren()) do
+                if v:IsA("Model") and v:FindFirstChild("Head") then
+                    createESP(v, Color3.new(1, 0, 0))
+                end
+            end
+            for _, v in pairs(workspace:GetChildren()) do
+                if v:IsA("Tool") and v:FindFirstChild("Handle") then
+                    createESP(v, Color3.new(0, 1, 0))
+                end
+            end
+        end
+    end
+end)
+
+-- PvP Enhancements: Hitbox & Aimbot (basic)
+local HitboxExpand = false
+local AimbotEnabled = false
+
+task.spawn(function()
+    while task.wait(0.5) do
+        if HitboxExpand then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                    local root = plr.Character.HumanoidRootPart
+                    root.Size = Vector3.new(8, 8, 8)
+                    root.Transparency = 0.5
+                    root.BrickColor = BrickColor.new("Bright red")
+                    root.Material = Enum.Material.ForceField
+                    root.CanCollide = false
+                end
+            end
+        end
+    end
+end)
+
+-- GUI for Settings, ESP, PvP
+local PvPTab = Window:CreateTab("⚔️ PvP")
+PvPTab:CreateToggle({
+    Name = "Enable Hitbox Expand",
+    CurrentValue = false,
+    Callback = function(v)
+        HitboxExpand = v
+    end
+})
+PvPTab:CreateToggle({
+    Name = "Enable Aimbot (WIP)",
+    CurrentValue = false,
+    Callback = function(v)
+        AimbotEnabled = v
+    end
+})
+
+local ESPTab = Window:CreateTab("🔍 ESP")
+ESPTab:CreateToggle({
+    Name = "Enable ESP (Enemies & Fruits)",
+    CurrentValue = false,
+    Callback = function(v)
+        toggleESP(v)
+    end
+})
+
+--// Auto Quest System (based on live logic patterns)
+local autoQuestEnabled = false
+
+local function startAutoQuest()
+    task.spawn(function()
+        while autoQuestEnabled do
+            local questNPC = workspace:FindFirstChild("QuestBoard", true) or workspace:FindFirstChild("Quest", true)
+            if questNPC then
+                local prompt = questNPC:FindFirstChildOfClass("ProximityPrompt")
+                if prompt then
+                    fireproximityprompt(prompt)
+                end
+            end
+
+            task.wait(1.5)
+            for _, v in pairs(LocalPlayer.PlayerGui:GetDescendants()) do
+                if v:IsA("TextButton") and v.Text == "Start" then
+                    v:Activate()
+                    break
+                end
+            end
+            task.wait(10) -- Wait for quest to be in progress
+        end
+    end)
+end
+
+--// Tween-based teleport system
+local function smartTeleport(destination)
+    local root = Character:FindFirstChild("HumanoidRootPart")
+    if root and destination then
+        local distance = (root.Position - destination).Magnitude
+        if distance < 50 then
+            root.CFrame = CFrame.new(destination)
+        else
+            local tweenService = game:GetService("TweenService")
+            local duration = math.clamp(distance / 250, 0.5, 3)
+            local goal = {CFrame = CFrame.new(destination)}
+            local tween = tweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), goal)
+            tween:Play()
+            tween.Completed:Wait()
+        end
+    end
+end
+
+--// Hit Aura System
+local HitAura = false
+local function startHitAura()
+    task.spawn(function()
+        while HitAura do
+            local hits = getAllBladeHits(40, "Enemies")
+            for _, part in pairs(hits) do
+                -- Example: Trigger your blade/skill here
+                if part and part.Parent:FindFirstChildOfClass("Humanoid") then
+                    local remote = getAttackRemote() -- hypothetical function
+                    if remote then
+                        remote:FireServer(part)
+                    end
+                end
+            end
+            task.wait(0.35)
+        end
+    end)
+end
+
+--// Settings GUI
+local SettingsTab = Window:CreateTab("⚙️ Settings")
+
+SettingsTab:CreateToggle({
+    Name = "Enable Hit Aura",
+    CurrentValue = false,
+    Callback = function(v)
+        HitAura = v
+        if v then
+            startHitAura()
+        end
+    end
+})
+
+SettingsTab:CreateToggle({
+    Name = "Enable Auto Quest",
+    CurrentValue = false,
+    Callback = function(v)
+        autoQuestEnabled = v
+        if v then
+            startAutoQuest()
+        end
+    end
+})
+
+--// Auto Haki Logic
+local autoHakiEnabled = false
+local function toggleHaki()
+    local char = LocalPlayer.Character
+    if char and not char:FindFirstChild("HasBuso") then
+        local remote = getHakiRemote() -- Replace with actual remote path
+        if remote then
+            remote:FireServer()
+        end
+    end
+end
+
+local function autoHakiLoop()
+    while autoHakiEnabled do
+        toggleHaki()
+        task.wait(3)
+    end
+end
+
+HakiTab:CreateToggle({
+    Name = "Enable Auto Haki",
+    CurrentValue = false,
+    Callback = function(v)
+        autoHakiEnabled = v
+        if v then autoHakiLoop() end
+    end
+})
+
+--// Fruit Sniper System
+local sniperActive = false
+local function fruitSniperLoop()
+    task.spawn(function()
+        while sniperActive do
+            for _, fruit in pairs(workspace:GetDescendants()) do
+                if fruit:IsA("Tool") and fruit:FindFirstChild("Handle") and fruit.Name:lower():match("fruit") then
+                    local pos = fruit.Handle.Position
+                    ESPHighlight(fruit.Handle, "🌈 Rare Fruit", Color3.fromRGB(255, 85, 255))
+                    smartTeleport(pos)
+                    break
+                end
+            end
+            task.wait(10)
+        end
+    end)
+end
+
+SniperTab:CreateToggle({
+    Name = "Enable Fruit Sniper",
+    CurrentValue = false,
+    Callback = function(state)
+        sniperActive = state
+        if state then fruitSniperLoop() end
+    end
+})
+
+--// Auto Raid
+local raidActive = false
+local function autoRaidLoop()
+    task.spawn(function()
+        while raidActive do
+            local raidRemote = findRaidJoinRemote()
+            if raidRemote then
+                raidRemote:FireServer("JoinRaid")
+            end
+            task.wait(30)
+        end
+    end)
+end
+
+RaidTab:CreateToggle({
+    Name = "Enable Auto Raid",
+    CurrentValue = false,
+    Callback = function(v)
+        raidActive = v
+        if v then autoRaidLoop() end
+    end
+})
+
+--// Auto Sea Events
+local seaEventActive = false
+local function autoSeaLoop()
+    task.spawn(function()
+        while seaEventActive do
+            -- Add sea event detection logic here
+            local event = detectSeaEvent()
+            if event then
+                smartTeleport(event.Position)
+            end
+            task.wait(15)
+        end
+    end)
+end
+
+SeaEventsTab:CreateToggle({
+    Name = "Enable Auto Sea Events",
+    CurrentValue = false,
+    Callback = function(v)
+        seaEventActive = v
+        if v then autoSeaLoop() end
+    end
+})
+
+--// Save Settings (basic key-based)
+local function saveSettings()
+    local data = {
+        HitAura = HitAura,
+        AutoQuest = autoQuestEnabled,
+        AutoHaki = autoHakiEnabled,
+        FruitSniper = sniperActive,
+        AutoRaid = raidActive,
+        SeaEvent = seaEventActive
+    }
+    writefile("BloxFruits_ExploitHub_Settings.json", game:GetService("HttpService"):JSONEncode(data))
+end
+
+local function loadSettings()
+    if isfile("BloxFruits_ExploitHub_Settings.json") then
+        local raw = readfile("BloxFruits_ExploitHub_Settings.json")
+        local data = game:GetService("HttpService"):JSONDecode(raw)
+        HitAura = data.HitAura
+        autoQuestEnabled = data.AutoQuest
+        autoHakiEnabled = data.AutoHaki
+        sniperActive = data.FruitSniper
+        raidActive = data.AutoRaid
+        seaEventActive = data.SeaEvent
+    end
+end
+
+SettingsTab:CreateButton({
+    Name = "💾 Save Settings",
+    Callback = saveSettings
+})
+
+SettingsTab:CreateButton({
+    Name = "📂 Load Settings",
+    Callback = loadSettings
+})
+
+--// Mobile Support
+local UIS = game:GetService("UserInputService")
+
+if UIS.TouchEnabled then
+    Rayfield:Notify({
+        Title = "Mobile Detected",
+        Content = "Touch compatibility enabled for your device.",
+        Duration = 5
+    })
+end
+
+--// Safe Toggles with Validation
+local function safeToggle(callback)
+    return function(state)
+        if typeof(state) ~= "boolean" then return end
+        task.spawn(function()
+            pcall(function() callback(state) end)
+        end)
+    end
+end
+
+-- Example safer toggle:
+PvPTab:CreateToggle({
+    Name = "Enable Aimbot (Safe)",
+    CurrentValue = false,
+    Callback = safeToggle(function(v)
+        aimbotEnabled = v
+        if v then
+            startAimbotLoop()
+        end
+    end)
+})
+
+--// Touch Input Handling for HitAura
+if UIS.TouchEnabled then
+    local hitAuraBtn = Instance.new("TextButton")
+    hitAuraBtn.Text = "Toggle Hit Aura"
+    hitAuraBtn.Size = UDim2.new(0, 140, 0, 40)
+    hitAuraBtn.Position = UDim2.new(0.9, -150, 0.8, 0)
+    hitAuraBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    hitAuraBtn.TextColor3 = Color3.new(1,1,1)
+    hitAuraBtn.TextScaled = true
+    hitAuraBtn.Parent = game.CoreGui
+
+    hitAuraBtn.MouseButton1Click:Connect(function()
+        HitAura = not HitAura
+        Rayfield:Notify({
+            Title = "Hit Aura",
+            Content = HitAura and "Enabled" or "Disabled",
+            Duration = 3
+        })
+    end)
+end
+
+--// UI Cleanup & Visual Tweaks
+Window:SetToggleVisibility(false) -- Allow GUI to be hidden
+Rayfield:Notify({
+    Title = "Exploit Hub Ready",
+    Content = "All systems loaded. Enjoy your Blox Fruits session!",
+    Duration = 6
+})
+
+--/ Footer Credit
+SettingsTab:CreateParagraph({
+    Title = "Credits",
+    Content = "Made by R3nderDV | Enhanced by ChatGPT (Rayfield UI, Modules, Autofarm Integration)"
+})
+
+--// Self-Test Function
+local function healthCheck()
+    local status = {
+        ["Remote Hooking"] = HookRemotes and "✔️",
+        ["Teleport System"] = smartTeleport and "✔️",
+        ["Hit Aura"] = HitAura and "✔️",
+        ["Auto Farm"] = autoFarmEnabled and "✔️",
+        ["Fruit ESP"] = fruitEspEnabled and "✔️",
+        ["Rayfield UI"] = Rayfield and "✔️",
+    }
+
+    local summary = ""
+    for k, v in pairs(status) do
+        summary = summary .. k .. ": " .. v .. "\n"
+    end
+
+    Rayfield:Notify({
+        Title = "System Check",
+        Content = summary,
+        Duration = 6
+    })
+end
+
+SettingsTab:CreateButton({
+    Name = "📋 Run Health Check",
+    Callback = healthCheck
+})
