@@ -12,7 +12,7 @@ end
 
 --// Settings
 local Settings = {
-    HitAura = false,
+    HitAura = true,
     AutoQuest = false,
     AttackDistance = 40,
     AttackCooldown = 0.35,
