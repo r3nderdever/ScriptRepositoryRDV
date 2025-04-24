@@ -1,0 +1,762 @@
+notr3nder@penguin:~$ g++ -o sword_game_app sword_game.cpp -lsfml-graphics -lsfml-window -lsfml-system
+sword_game.cpp:1:2: error: stray ‘#’ in program
+    1 | k#include <SFML/Graphics.hpp>
+      |  ^
+sword_game.cpp:1:1: error: ‘k’ does not name a type
+    1 | k#include <SFML/Graphics.hpp>
+      | ^
+In file included from /usr/include/SFML/System/Clock.hpp:32,
+                 from /usr/include/SFML/System.hpp:33,
+                 from /usr/include/SFML/Window.hpp:32,
+                 from sword_game.cpp:2:
+/usr/include/SFML/System/Time.hpp:70:5: error: ‘Int32’ does not name a type
+   70 |     Int32 asMilliseconds() const;
+      |     ^~~~~
+/usr/include/SFML/System/Time.hpp:80:5: error: ‘Int64’ does not name a type
+   80 |     Int64 asMicroseconds() const;
+      |     ^~~~~
+/usr/include/SFML/System/Time.hpp:90:46: error: ‘Int32’ has not been declared
+   90 |     friend SFML_SYSTEM_API Time milliseconds(Int32);
+      |                                              ^~~~~
+/usr/include/SFML/System/Time.hpp:91:46: error: ‘Int64’ has not been declared
+   91 |     friend SFML_SYSTEM_API Time microseconds(Int64);
+      |                                              ^~~~~
+/usr/include/SFML/System/Time.hpp:102:24: error: expected ‘)’ before ‘microseconds’
+  102 |     explicit Time(Int64 microseconds);
+      |                  ~     ^~~~~~~~~~~~~
+      |                        )
+/usr/include/SFML/System/Time.hpp:109:5: error: ‘Int64’ does not name a type
+  109 |     Int64 m_microseconds; ///< Time value stored as microseconds
+      |     ^~~~~
+/usr/include/SFML/System/Time.hpp:136:35: error: ‘sf::Time sf::milliseconds’ redeclared as different kind of entity
+  136 | SFML_SYSTEM_API Time milliseconds(Int32 amount);
+      |                                   ^~~~~
+/usr/include/SFML/System/Time.hpp:90:33: note: previous declaration ‘sf::Time sf::milliseconds(int)’
+   90 |     friend SFML_SYSTEM_API Time milliseconds(Int32);
+      |                                 ^~~~~~~~~~~~
+/usr/include/SFML/System/Time.hpp:136:35: error: ‘Int32’ was not declared in this scope
+  136 | SFML_SYSTEM_API Time milliseconds(Int32 amount);
+      |                                   ^~~~~
+/usr/include/SFML/System/Time.hpp:149:35: error: ‘sf::Time sf::microseconds’ redeclared as different kind of entity
+  149 | SFML_SYSTEM_API Time microseconds(Int64 amount);
+      |                                   ^~~~~
+/usr/include/SFML/System/Time.hpp:91:33: note: previous declaration ‘sf::Time sf::microseconds(int)’
+   91 |     friend SFML_SYSTEM_API Time microseconds(Int64);
+      |                                 ^~~~~~~~~~~~
+/usr/include/SFML/System/Time.hpp:149:35: error: ‘Int64’ was not declared in this scope
+  149 | SFML_SYSTEM_API Time microseconds(Int64 amount);
+      |                                   ^~~~~
+/usr/include/SFML/System/Time.hpp:304:44: error: ‘Int64’ has not been declared
+  304 | SFML_SYSTEM_API Time operator *(Time left, Int64 right);
+      |                                            ^~~~~
+/usr/include/SFML/System/Time.hpp:328:22: error: declaration of ‘operator*’ as non-function
+  328 | SFML_SYSTEM_API Time operator *(Int64 left, Time right);
+      |                      ^~~~~~~~
+/usr/include/SFML/System/Time.hpp:328:33: error: ‘Int64’ was not declared in this scope
+  328 | SFML_SYSTEM_API Time operator *(Int64 left, Time right);
+      |                                 ^~~~~
+/usr/include/SFML/System/Time.hpp:328:50: error: expected primary-expression before ‘right’
+  328 | SFML_SYSTEM_API Time operator *(Int64 left, Time right);
+      |                                                  ^~~~~
+/usr/include/SFML/System/Time.hpp:352:47: error: ‘Int64’ has not been declared
+  352 | SFML_SYSTEM_API Time& operator *=(Time& left, Int64 right);
+      |                                               ^~~~~
+/usr/include/SFML/System/Time.hpp:376:44: error: ‘Int64’ has not been declared
+  376 | SFML_SYSTEM_API Time operator /(Time left, Int64 right);
+      |                                            ^~~~~
+/usr/include/SFML/System/Time.hpp:400:47: error: ‘Int64’ has not been declared
+  400 | SFML_SYSTEM_API Time& operator /=(Time& left, Int64 right);
+      |                                               ^~~~~
+In file included from /usr/include/SFML/System/FileInputStream.hpp:33,
+                 from /usr/include/SFML/System.hpp:35:
+/usr/include/SFML/System/InputStream.hpp:63:13: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+   63 |     virtual Int64 read(void* data, Int64 size) = 0;
+      |             ^~~~~
+      |             int64_t
+/usr/include/SFML/System/InputStream.hpp:73:13: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+   73 |     virtual Int64 seek(Int64 position) = 0;
+      |             ^~~~~
+      |             int64_t
+/usr/include/SFML/System/InputStream.hpp:81:13: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+   81 |     virtual Int64 tell() = 0;
+      |             ^~~~~
+      |             int64_t
+/usr/include/SFML/System/InputStream.hpp:89:13: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+   89 |     virtual Int64 getSize() = 0;
+      |             ^~~~~
+      |             int64_t
+/usr/include/SFML/System/FileInputStream.hpp:92:13: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+   92 |     virtual Int64 read(void* data, Int64 size);
+      |             ^~~~~
+      |             int64_t
+/usr/include/SFML/System/FileInputStream.hpp:102:13: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+  102 |     virtual Int64 seek(Int64 position);
+      |             ^~~~~
+      |             int64_t
+/usr/include/SFML/System/FileInputStream.hpp:110:13: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+  110 |     virtual Int64 tell();
+      |             ^~~~~
+      |             int64_t
+/usr/include/SFML/System/FileInputStream.hpp:118:13: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+  118 |     virtual Int64 getSize();
+      |             ^~~~~
+      |             int64_t
+In file included from /usr/include/SFML/System.hpp:38:
+/usr/include/SFML/System/MemoryInputStream.hpp:74:13: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+   74 |     virtual Int64 read(void* data, Int64 size);
+      |             ^~~~~
+      |             int64_t
+/usr/include/SFML/System/MemoryInputStream.hpp:84:13: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+   84 |     virtual Int64 seek(Int64 position);
+      |             ^~~~~
+      |             int64_t
+/usr/include/SFML/System/MemoryInputStream.hpp:92:13: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+   92 |     virtual Int64 tell();
+      |             ^~~~~
+      |             int64_t
+/usr/include/SFML/System/MemoryInputStream.hpp:100:13: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+  100 |     virtual Int64 getSize();
+      |             ^~~~~
+      |             int64_t
+/usr/include/SFML/System/MemoryInputStream.hpp:108:5: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+  108 |     Int64       m_size;   ///< Total size of the data
+      |     ^~~~~
+      |     int64_t
+/usr/include/SFML/System/MemoryInputStream.hpp:109:5: error: ‘Int64’ does not name a type; did you mean ‘int64_t’?
+  109 |     Int64       m_offset; ///< Current reading position
+      |     ^~~~~
+      |     int64_t
+In file included from /usr/include/SFML/System/String.hpp:32,
+                 from /usr/include/SFML/System.hpp:42:
+/usr/include/SFML/System/Utf.hpp:67:40: error: ‘Uint32’ has not been declared
+   67 |     static In decode(In begin, In end, Uint32& output, Uint32 replacement = 0);
+      |                                        ^~~~~~
+/usr/include/SFML/System/Utf.hpp:67:56: error: ‘Uint32’ has not been declared
+   67 |     static In decode(In begin, In end, Uint32& output, Uint32 replacement = 0);
+      |                                                        ^~~~~~
+/usr/include/SFML/System/Utf.hpp:83:23: error: ‘Uint32’ has not been declared
+   83 |     static Out encode(Uint32 input, Out output, Uint8 replacement = 0);
+      |                       ^~~~~~
+/usr/include/SFML/System/Utf.hpp:83:49: error: ‘Uint8’ has not been declared
+   83 |     static Out encode(Uint32 input, Out output, Uint8 replacement = 0);
+      |                                                 ^~~~~
+/usr/include/SFML/System/Utf.hpp:274:40: error: ‘Uint32’ has not been declared
+  274 |     static In decode(In begin, In end, Uint32& output, Uint32 replacement = 0);
+      |                                        ^~~~~~
+/usr/include/SFML/System/Utf.hpp:274:56: error: ‘Uint32’ has not been declared
+  274 |     static In decode(In begin, In end, Uint32& output, Uint32 replacement = 0);
+      |                                                        ^~~~~~
+/usr/include/SFML/System/Utf.hpp:290:23: error: ‘Uint32’ has not been declared
+  290 |     static Out encode(Uint32 input, Out output, Uint16 replacement = 0);
+      |                       ^~~~~~
+/usr/include/SFML/System/Utf.hpp:290:49: error: ‘Uint16’ has not been declared
+  290 |     static Out encode(Uint32 input, Out output, Uint16 replacement = 0);
+      |                                                 ^~~~~~
+/usr/include/SFML/System/Utf.hpp:482:40: error: ‘Uint32’ has not been declared
+  482 |     static In decode(In begin, In end, Uint32& output, Uint32 replacement = 0);
+      |                                        ^~~~~~
+/usr/include/SFML/System/Utf.hpp:482:56: error: ‘Uint32’ has not been declared
+  482 |     static In decode(In begin, In end, Uint32& output, Uint32 replacement = 0);
+      |                                                        ^~~~~~
+/usr/include/SFML/System/Utf.hpp:499:23: error: ‘Uint32’ has not been declared
+  499 |     static Out encode(Uint32 input, Out output, Uint32 replacement = 0);
+      |                       ^~~~~~
+/usr/include/SFML/System/Utf.hpp:499:49: error: ‘Uint32’ has not been declared
+  499 |     static Out encode(Uint32 input, Out output, Uint32 replacement = 0);
+      |                                                 ^~~~~~
+/usr/include/SFML/System/Utf.hpp:678:12: error: ‘Uint32’ does not name a type; did you mean ‘uint32_t’?
+  678 |     static Uint32 decodeAnsi(In input, const std::locale& locale = std::locale());
+      |            ^~~~~~
+      |            uint32_t
+/usr/include/SFML/System/Utf.hpp:693:12: error: ‘Uint32’ does not name a type; did you mean ‘uint32_t’?
+  693 |     static Uint32 decodeWide(In input);
+      |            ^~~~~~
+      |            uint32_t
+/usr/include/SFML/System/Utf.hpp:711:27: error: ‘Uint32’ has not been declared
+  711 |     static Out encodeAnsi(Uint32 codepoint, Out output, char replacement = 0, const std::locale& locale = std::locale());
+      |                           ^~~~~~
+/usr/include/SFML/System/Utf.hpp:728:27: error: ‘Uint32’ has not been declared
+  728 |     static Out encodeWide(Uint32 codepoint, Out output, wchar_t replacement = 0);
+      |                           ^~~~~~
+In file included from /usr/include/SFML/System/Utf.hpp:731:
+/usr/include/SFML/System/Utf.inl:39:37: error: ‘Uint32’ has not been declared
+   39 | In Utf<8>::decode(In begin, In end, Uint32& output, Uint32 replacement)
+      |                                     ^~~~~~
+/usr/include/SFML/System/Utf.inl:39:53: error: ‘Uint32’ has not been declared
+   39 | In Utf<8>::decode(In begin, In end, Uint32& output, Uint32 replacement)
+      |                                                     ^~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static In sf::Utf<8>::decode(In, In, int&, int)’:
+/usr/include/SFML/System/Utf.inl:53:18: error: ‘Uint32’ does not name a type; did you mean ‘uint32_t’?
+   53 |     static const Uint32 offsets[6] =
+      |                  ^~~~~~
+      |                  uint32_t
+/usr/include/SFML/System/Utf.inl:59:46: error: ‘Uint8’ does not name a type
+   59 |     int trailingBytes = trailing[static_cast<Uint8>(*begin)];
+      |                                              ^~~~~
+/usr/include/SFML/System/Utf.inl:65:43: error: ‘Uint8’ does not name a type
+   65 |             case 5: output += static_cast<Uint8>(*begin++); output <<= 6;
+      |                                           ^~~~~
+/usr/include/SFML/System/Utf.inl:66:43: error: ‘Uint8’ does not name a type
+   66 |             case 4: output += static_cast<Uint8>(*begin++); output <<= 6;
+      |                                           ^~~~~
+/usr/include/SFML/System/Utf.inl:67:43: error: ‘Uint8’ does not name a type
+   67 |             case 3: output += static_cast<Uint8>(*begin++); output <<= 6;
+      |                                           ^~~~~
+/usr/include/SFML/System/Utf.inl:68:43: error: ‘Uint8’ does not name a type
+   68 |             case 2: output += static_cast<Uint8>(*begin++); output <<= 6;
+      |                                           ^~~~~
+/usr/include/SFML/System/Utf.inl:69:43: error: ‘Uint8’ does not name a type
+   69 |             case 1: output += static_cast<Uint8>(*begin++); output <<= 6;
+      |                                           ^~~~~
+/usr/include/SFML/System/Utf.inl:70:43: error: ‘Uint8’ does not name a type
+   70 |             case 0: output += static_cast<Uint8>(*begin++);
+      |                                           ^~~~~
+/usr/include/SFML/System/Utf.inl:72:19: error: ‘offsets’ was not declared in this scope; did you mean ‘offsetof’?
+   72 |         output -= offsets[trailingBytes];
+      |                   ^~~~~~~
+      |                   offsetof
+/usr/include/SFML/System/Utf.inl: At global scope:
+/usr/include/SFML/System/Utf.inl:87:5: error: ‘Out sf::Utf<8>::encode’ is not a static data member of ‘class sf::Utf<8>’
+   87 | Out Utf<8>::encode(Uint32 input, Out output, Uint8 replacement)
+      |     ^~~~~~
+/usr/include/SFML/System/Utf.inl:87:20: error: template definition of non-template ‘Out sf::Utf<8>::encode’
+   87 | Out Utf<8>::encode(Uint32 input, Out output, Uint8 replacement)
+      |                    ^~~~~~
+/usr/include/SFML/System/Utf.inl:87:20: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+   87 | Out Utf<8>::encode(Uint32 input, Out output, Uint8 replacement)
+      |                    ^~~~~~
+      |                    uint32_t
+/usr/include/SFML/System/Utf.inl:87:38: error: expected primary-expression before ‘output’
+   87 | Out Utf<8>::encode(Uint32 input, Out output, Uint8 replacement)
+      |                                      ^~~~~~
+/usr/include/SFML/System/Utf.inl:87:46: error: ‘Uint8’ was not declared in this scope
+   87 | Out Utf<8>::encode(Uint32 input, Out output, Uint8 replacement)
+      |                                              ^~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static In sf::Utf<8>::next(In, In)’:
+/usr/include/SFML/System/Utf.inl:135:5: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  135 |     Uint32 codepoint;
+      |     ^~~~~~
+      |     uint32_t
+/usr/include/SFML/System/Utf.inl:136:31: error: ‘codepoint’ was not declared in this scope
+  136 |     return decode(begin, end, codepoint);
+      |                               ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static Out sf::Utf<8>::fromAnsi(In, In, Out, const std::locale&)’:
+/usr/include/SFML/System/Utf.inl:161:9: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  161 |         Uint32 codepoint = Utf<32>::decodeAnsi(*begin++, locale);
+      |         ^~~~~~
+      |         uint32_t
+/usr/include/SFML/System/Utf.inl:162:25: error: ‘codepoint’ was not declared in this scope
+  162 |         output = encode(codepoint, output);
+      |                         ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static Out sf::Utf<8>::fromWide(In, In, Out)’:
+/usr/include/SFML/System/Utf.inl:175:9: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  175 |         Uint32 codepoint = Utf<32>::decodeWide(*begin++);
+      |         ^~~~~~
+      |         uint32_t
+/usr/include/SFML/System/Utf.inl:176:25: error: ‘codepoint’ was not declared in this scope
+  176 |         output = encode(codepoint, output);
+      |                         ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static Out sf::Utf<8>::toAnsi(In, In, Out, char, const std::locale&)’:
+/usr/include/SFML/System/Utf.inl:202:9: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  202 |         Uint32 codepoint;
+      |         ^~~~~~
+      |         uint32_t
+/usr/include/SFML/System/Utf.inl:203:36: error: ‘codepoint’ was not declared in this scope
+  203 |         begin = decode(begin, end, codepoint);
+      |                                    ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static Out sf::Utf<8>::toWide(In, In, Out, wchar_t)’:
+/usr/include/SFML/System/Utf.inl:217:9: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  217 |         Uint32 codepoint;
+      |         ^~~~~~
+      |         uint32_t
+/usr/include/SFML/System/Utf.inl:218:36: error: ‘codepoint’ was not declared in this scope
+  218 |         begin = decode(begin, end, codepoint);
+      |                                    ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static Out sf::Utf<8>::toLatin1(In, In, Out, char)’:
+/usr/include/SFML/System/Utf.inl:234:9: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  234 |         Uint32 codepoint;
+      |         ^~~~~~
+      |         uint32_t
+/usr/include/SFML/System/Utf.inl:235:36: error: ‘codepoint’ was not declared in this scope
+  235 |         begin = decode(begin, end, codepoint);
+      |                                    ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static Out sf::Utf<8>::toUtf16(In, In, Out)’:
+/usr/include/SFML/System/Utf.inl:257:9: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  257 |         Uint32 codepoint;
+      |         ^~~~~~
+      |         uint32_t
+/usr/include/SFML/System/Utf.inl:258:36: error: ‘codepoint’ was not declared in this scope
+  258 |         begin = decode(begin, end, codepoint);
+      |                                    ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static Out sf::Utf<8>::toUtf32(In, In, Out)’:
+/usr/include/SFML/System/Utf.inl:272:9: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  272 |         Uint32 codepoint;
+      |         ^~~~~~
+      |         uint32_t
+/usr/include/SFML/System/Utf.inl:273:36: error: ‘codepoint’ was not declared in this scope
+  273 |         begin = decode(begin, end, codepoint);
+      |                                    ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: At global scope:
+/usr/include/SFML/System/Utf.inl:283:38: error: ‘Uint32’ has not been declared
+  283 | In Utf<16>::decode(In begin, In end, Uint32& output, Uint32 replacement)
+      |                                      ^~~~~~
+/usr/include/SFML/System/Utf.inl:283:54: error: ‘Uint32’ has not been declared
+  283 | In Utf<16>::decode(In begin, In end, Uint32& output, Uint32 replacement)
+      |                                                      ^~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static In sf::Utf<16>::decode(In, In, int&, int)’:
+/usr/include/SFML/System/Utf.inl:285:5: error: ‘Uint16’ was not declared in this scope; did you mean ‘uint16_t’?
+  285 |     Uint16 first = *begin++;
+      |     ^~~~~~
+      |     uint16_t
+/usr/include/SFML/System/Utf.inl:288:10: error: ‘first’ was not declared in this scope
+  288 |     if ((first >= 0xD800) && (first <= 0xDBFF))
+      |          ^~~~~
+/usr/include/SFML/System/Utf.inl:292:13: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  292 |             Uint32 second = *begin++;
+      |             ^~~~~~
+      |             uint32_t
+/usr/include/SFML/System/Utf.inl:293:18: error: ‘second’ was not declared in this scope; did you mean ‘seconds’?
+  293 |             if ((second >= 0xDC00) && (second <= 0xDFFF))
+      |                  ^~~~~~
+      |                  seconds
+/usr/include/SFML/System/Utf.inl:296:38: error: ‘Uint32’ does not name a type; did you mean ‘uint32_t’?
+  296 |                 output = static_cast<Uint32>(((first - 0xD800) << 10) + (second - 0xDC00) + 0x0010000);
+      |                                      ^~~~~~
+      |                                      uint32_t
+/usr/include/SFML/System/Utf.inl: At global scope:
+/usr/include/SFML/System/Utf.inl:323:5: error: ‘Out sf::Utf<16>::encode’ is not a static data member of ‘class sf::Utf<16>’
+  323 | Out Utf<16>::encode(Uint32 input, Out output, Uint16 replacement)
+      |     ^~~~~~~
+/usr/include/SFML/System/Utf.inl:323:21: error: template definition of non-template ‘Out sf::Utf<16>::encode’
+  323 | Out Utf<16>::encode(Uint32 input, Out output, Uint16 replacement)
+      |                     ^~~~~~
+/usr/include/SFML/System/Utf.inl:323:21: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  323 | Out Utf<16>::encode(Uint32 input, Out output, Uint16 replacement)
+      |                     ^~~~~~
+      |                     uint32_t
+/usr/include/SFML/System/Utf.inl:323:39: error: expected primary-expression before ‘output’
+  323 | Out Utf<16>::encode(Uint32 input, Out output, Uint16 replacement)
+      |                                       ^~~~~~
+/usr/include/SFML/System/Utf.inl:323:47: error: ‘Uint16’ was not declared in this scope; did you mean ‘uint16_t’?
+  323 | Out Utf<16>::encode(Uint32 input, Out output, Uint16 replacement)
+      |                                               ^~~~~~
+      |                                               uint16_t
+/usr/include/SFML/System/Utf.inl: In static member function ‘static In sf::Utf<16>::next(In, In)’:
+/usr/include/SFML/System/Utf.inl:362:5: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  362 |     Uint32 codepoint;
+      |     ^~~~~~
+      |     uint32_t
+/usr/include/SFML/System/Utf.inl:363:31: error: ‘codepoint’ was not declared in this scope
+  363 |     return decode(begin, end, codepoint);
+      |                               ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static Out sf::Utf<16>::fromAnsi(In, In, Out, const std::locale&)’:
+/usr/include/SFML/System/Utf.inl:388:9: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  388 |         Uint32 codepoint = Utf<32>::decodeAnsi(*begin++, locale);
+      |         ^~~~~~
+      |         uint32_t
+/usr/include/SFML/System/Utf.inl:389:25: error: ‘codepoint’ was not declared in this scope
+  389 |         output = encode(codepoint, output);
+      |                         ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static Out sf::Utf<16>::fromWide(In, In, Out)’:
+/usr/include/SFML/System/Utf.inl:402:9: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  402 |         Uint32 codepoint = Utf<32>::decodeWide(*begin++);
+      |         ^~~~~~
+      |         uint32_t
+/usr/include/SFML/System/Utf.inl:403:25: error: ‘codepoint’ was not declared in this scope
+  403 |         output = encode(codepoint, output);
+      |                         ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static Out sf::Utf<16>::toAnsi(In, In, Out, char, const std::locale&)’:
+/usr/include/SFML/System/Utf.inl:426:9: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  426 |         Uint32 codepoint;
+      |         ^~~~~~
+      |         uint32_t
+/usr/include/SFML/System/Utf.inl:427:36: error: ‘codepoint’ was not declared in this scope
+  427 |         begin = decode(begin, end, codepoint);
+      |                                    ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static Out sf::Utf<16>::toWide(In, In, Out, wchar_t)’:
+/usr/include/SFML/System/Utf.inl:441:9: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  441 |         Uint32 codepoint;
+      |         ^~~~~~
+      |         uint32_t
+/usr/include/SFML/System/Utf.inl:442:36: error: ‘codepoint’ was not declared in this scope
+  442 |         begin = decode(begin, end, codepoint);
+      |                                    ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static Out sf::Utf<16>::toUtf8(In, In, Out)’:
+/usr/include/SFML/System/Utf.inl:472:9: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  472 |         Uint32 codepoint;
+      |         ^~~~~~
+      |         uint32_t
+/usr/include/SFML/System/Utf.inl:473:36: error: ‘codepoint’ was not declared in this scope
+  473 |         begin = decode(begin, end, codepoint);
+      |                                    ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: In static member function ‘static Out sf::Utf<16>::toUtf32(In, In, Out)’:
+/usr/include/SFML/System/Utf.inl:495:9: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  495 |         Uint32 codepoint;
+      |         ^~~~~~
+      |         uint32_t
+/usr/include/SFML/System/Utf.inl:496:36: error: ‘codepoint’ was not declared in this scope
+  496 |         begin = decode(begin, end, codepoint);
+      |                                    ^~~~~~~~~
+/usr/include/SFML/System/Utf.inl: At global scope:
+/usr/include/SFML/System/Utf.inl:506:42: error: ‘Uint32’ has not been declared
+  506 | In Utf<32>::decode(In begin, In /*end*/, Uint32& output, Uint32 /*replacement*/)
+      |                                          ^~~~~~
+/usr/include/SFML/System/Utf.inl:506:58: error: ‘Uint32’ has not been declared
+  506 | In Utf<32>::decode(In begin, In /*end*/, Uint32& output, Uint32 /*replacement*/)
+      |                                                          ^~~~~~
+/usr/include/SFML/System/Utf.inl:515:5: error: ‘Out sf::Utf<32>::encode’ is not a static data member of ‘class sf::Utf<32>’
+  515 | Out Utf<32>::encode(Uint32 input, Out output, Uint32 /*replacement*/)
+      |     ^~~~~~~
+/usr/include/SFML/System/Utf.inl:515:21: error: template definition of non-template ‘Out sf::Utf<32>::encode’
+  515 | Out Utf<32>::encode(Uint32 input, Out output, Uint32 /*replacement*/)
+      |                     ^~~~~~
+/usr/include/SFML/System/Utf.inl:515:21: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  515 | Out Utf<32>::encode(Uint32 input, Out output, Uint32 /*replacement*/)
+      |                     ^~~~~~
+      |                     uint32_t
+/usr/include/SFML/System/Utf.inl:515:39: error: expected primary-expression before ‘output’
+  515 | Out Utf<32>::encode(Uint32 input, Out output, Uint32 /*replacement*/)
+      |                                       ^~~~~~
+/usr/include/SFML/System/Utf.inl:515:47: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  515 | Out Utf<32>::encode(Uint32 input, Out output, Uint32 /*replacement*/)
+      |                                               ^~~~~~
+      |                                               uint32_t
+/usr/include/SFML/System/Utf.inl:639:1: error: ‘Uint32’ does not name a type; did you mean ‘uint32_t’?
+  639 | Uint32 Utf<32>::decodeAnsi(In input, const std::locale& locale)
+      | ^~~~~~
+      | uint32_t
+/usr/include/SFML/System/Utf.inl:670:1: error: ‘Uint32’ does not name a type; did you mean ‘uint32_t’?
+  670 | Uint32 Utf<32>::decodeWide(In input)
+      | ^~~~~~
+      | uint32_t
+/usr/include/SFML/System/Utf.inl:684:5: error: ‘Out sf::Utf<32>::encodeAnsi’ is not a static data member of ‘class sf::Utf<32>’
+  684 | Out Utf<32>::encodeAnsi(Uint32 codepoint, Out output, char replacement, const std::locale& locale)
+      |     ^~~~~~~
+/usr/include/SFML/System/Utf.inl:684:25: error: template definition of non-template ‘Out sf::Utf<32>::encodeAnsi’
+  684 | Out Utf<32>::encodeAnsi(Uint32 codepoint, Out output, char replacement, const std::locale& locale)
+      |                         ^~~~~~
+/usr/include/SFML/System/Utf.inl:684:25: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  684 | Out Utf<32>::encodeAnsi(Uint32 codepoint, Out output, char replacement, const std::locale& locale)
+      |                         ^~~~~~
+      |                         uint32_t
+/usr/include/SFML/System/Utf.inl:684:47: error: expected primary-expression before ‘output’
+  684 | Out Utf<32>::encodeAnsi(Uint32 codepoint, Out output, char replacement, const std::locale& locale)
+      |                                               ^~~~~~
+/usr/include/SFML/System/Utf.inl:684:55: error: expected primary-expression before ‘char’
+  684 | Out Utf<32>::encodeAnsi(Uint32 codepoint, Out output, char replacement, const std::locale& locale)
+      |                                                       ^~~~
+/usr/include/SFML/System/Utf.inl:684:73: error: expected primary-expression before ‘const’
+  684 | Out Utf<32>::encodeAnsi(Uint32 codepoint, Out output, char replacement, const std::locale& locale)
+      |                                                                         ^~~~~
+/usr/include/SFML/System/Utf.inl:721:5: error: ‘Out sf::Utf<32>::encodeWide’ is not a static data member of ‘class sf::Utf<32>’
+  721 | Out Utf<32>::encodeWide(Uint32 codepoint, Out output, wchar_t replacement)
+      |     ^~~~~~~
+/usr/include/SFML/System/Utf.inl:721:25: error: template definition of non-template ‘Out sf::Utf<32>::encodeWide’
+  721 | Out Utf<32>::encodeWide(Uint32 codepoint, Out output, wchar_t replacement)
+      |                         ^~~~~~
+/usr/include/SFML/System/Utf.inl:721:25: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  721 | Out Utf<32>::encodeWide(Uint32 codepoint, Out output, wchar_t replacement)
+      |                         ^~~~~~
+      |                         uint32_t
+/usr/include/SFML/System/Utf.inl:721:47: error: expected primary-expression before ‘output’
+  721 | Out Utf<32>::encodeWide(Uint32 codepoint, Out output, wchar_t replacement)
+      |                                               ^~~~~~
+/usr/include/SFML/System/Utf.inl:721:55: error: expected primary-expression before ‘wchar_t’
+  721 | Out Utf<32>::encodeWide(Uint32 codepoint, Out output, wchar_t replacement)
+      |                                                       ^~~~~~~
+/usr/include/SFML/System/String.hpp:52:31: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+   52 |     typedef std::basic_string<Uint32>::iterator       Iterator;      ///< Iterator type
+      |                               ^~~~~~
+      |                               uint32_t
+/usr/include/SFML/System/String.hpp:52:37: error: template argument 1 is invalid
+   52 |     typedef std::basic_string<Uint32>::iterator       Iterator;      ///< Iterator type
+      |                                     ^
+/usr/include/SFML/System/String.hpp:52:37: error: template argument 2 is invalid
+/usr/include/SFML/System/String.hpp:52:37: error: template argument 3 is invalid
+/usr/include/SFML/System/String.hpp:52:40: error: expected ‘;’ at end of member declaration
+   52 |     typedef std::basic_string<Uint32>::iterator       Iterator;      ///< Iterator type
+      |                                        ^~~~~~~~
+      |                                                ;
+/usr/include/SFML/System/String.hpp:52:55: error: ‘Iterator’ does not name a type; did you mean ‘iterator’?
+   52 |     typedef std::basic_string<Uint32>::iterator       Iterator;      ///< Iterator type
+      |                                                       ^~~~~~~~
+      |                                                       iterator
+/usr/include/SFML/System/String.hpp:53:31: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+   53 |     typedef std::basic_string<Uint32>::const_iterator ConstIterator; ///< Read-only iterator type
+      |                               ^~~~~~
+      |                               uint32_t
+/usr/include/SFML/System/String.hpp:53:37: error: template argument 1 is invalid
+   53 |     typedef std::basic_string<Uint32>::const_iterator ConstIterator; ///< Read-only iterator type
+      |                                     ^
+/usr/include/SFML/System/String.hpp:53:37: error: template argument 2 is invalid
+/usr/include/SFML/System/String.hpp:53:37: error: template argument 3 is invalid
+/usr/include/SFML/System/String.hpp:53:40: error: expected ‘;’ at end of member declaration
+   53 |     typedef std::basic_string<Uint32>::const_iterator ConstIterator; ///< Read-only iterator type
+      |                                        ^~~~~~~~~~~~~~
+      |                                                      ;
+/usr/include/SFML/System/String.hpp:53:55: error: ‘ConstIterator’ does not name a type; did you mean ‘const_iterator’?
+   53 |     typedef std::basic_string<Uint32>::const_iterator ConstIterator; ///< Read-only iterator type
+      |                                                       ^~~~~~~~~~~~~
+      |                                                       const_iterator
+/usr/include/SFML/System/String.hpp:94:18: error: expected ‘)’ before ‘utf32Char’
+   94 |     String(Uint32 utf32Char);
+      |           ~      ^~~~~~~~~~
+      |                  )
+/usr/include/SFML/System/String.hpp:142:18: error: ‘Uint32’ does not name a type; did you mean ‘uint32_t’?
+  142 |     String(const Uint32* utf32String);
+      |                  ^~~~~~
+      |                  uint32_t
+/usr/include/SFML/System/String.hpp:150:36: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  150 |     String(const std::basic_string<Uint32>& utf32String);
+      |                                    ^~~~~~
+      |                                    uint32_t
+/usr/include/SFML/System/String.hpp:150:42: error: template argument 1 is invalid
+  150 |     String(const std::basic_string<Uint32>& utf32String);
+      |                                          ^
+/usr/include/SFML/System/String.hpp:150:42: error: template argument 2 is invalid
+/usr/include/SFML/System/String.hpp:150:42: error: template argument 3 is invalid
+/usr/include/SFML/System/String.hpp:276:23: error: ‘Uint8’ was not declared in this scope
+  276 |     std::basic_string<Uint8> toUtf8() const;
+      |                       ^~~~~
+/usr/include/SFML/System/String.hpp:276:28: error: template argument 1 is invalid
+  276 |     std::basic_string<Uint8> toUtf8() const;
+      |                            ^
+/usr/include/SFML/System/String.hpp:276:28: error: template argument 2 is invalid
+/usr/include/SFML/System/String.hpp:276:28: error: template argument 3 is invalid
+/usr/include/SFML/System/String.hpp:286:23: error: ‘Uint16’ was not declared in this scope; did you mean ‘uint16_t’?
+  286 |     std::basic_string<Uint16> toUtf16() const;
+      |                       ^~~~~~
+      |                       uint16_t
+/usr/include/SFML/System/String.hpp:286:29: error: template argument 1 is invalid
+  286 |     std::basic_string<Uint16> toUtf16() const;
+      |                             ^
+/usr/include/SFML/System/String.hpp:286:29: error: template argument 2 is invalid
+/usr/include/SFML/System/String.hpp:286:29: error: template argument 3 is invalid
+/usr/include/SFML/System/String.hpp:299:23: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  299 |     std::basic_string<Uint32> toUtf32() const;
+      |                       ^~~~~~
+      |                       uint32_t
+/usr/include/SFML/System/String.hpp:299:29: error: template argument 1 is invalid
+  299 |     std::basic_string<Uint32> toUtf32() const;
+      |                             ^
+/usr/include/SFML/System/String.hpp:299:29: error: template argument 2 is invalid
+/usr/include/SFML/System/String.hpp:299:29: error: template argument 3 is invalid
+/usr/include/SFML/System/String.hpp:332:5: error: ‘Uint32’ does not name a type; did you mean ‘uint32_t’?
+  332 |     Uint32 operator [](std::size_t index) const;
+      |     ^~~~~~
+      |     uint32_t
+/usr/include/SFML/System/String.hpp:345:5: error: ‘Uint32’ does not name a type; did you mean ‘uint32_t’?
+  345 |     Uint32& operator [](std::size_t index);
+      |     ^~~~~~
+      |     uint32_t
+/usr/include/SFML/System/String.hpp:469:11: error: ‘Uint32’ does not name a type; did you mean ‘uint32_t’?
+  469 |     const Uint32* getData() const;
+      |           ^~~~~~
+      |           uint32_t
+/usr/include/SFML/System/String.hpp:479:5: error: ‘Iterator’ does not name a type; did you mean ‘iterator’?
+  479 |     Iterator begin();
+      |     ^~~~~~~~
+      |     iterator
+/usr/include/SFML/System/String.hpp:489:5: error: ‘ConstIterator’ does not name a type; did you mean ‘const_iterator’?
+  489 |     ConstIterator begin() const;
+      |     ^~~~~~~~~~~~~
+      |     const_iterator
+/usr/include/SFML/System/String.hpp:503:5: error: ‘Iterator’ does not name a type; did you mean ‘iterator’?
+  503 |     Iterator end();
+      |     ^~~~~~~~
+      |     iterator
+/usr/include/SFML/System/String.hpp:517:5: error: ‘ConstIterator’ does not name a type; did you mean ‘const_iterator’?
+  517 |     ConstIterator end() const;
+      |     ^~~~~~~~~~~~~
+      |     const_iterator
+/usr/include/SFML/System/String.hpp:527:23: error: ‘Uint32’ was not declared in this scope; did you mean ‘uint32_t’?
+  527 |     std::basic_string<Uint32> m_string; ///< Internal string of UTF-32 characters
+      |                       ^~~~~~
+      |                       uint32_t
+/usr/include/SFML/System/String.hpp:527:29: error: template argument 1 is invalid
+  527 |     std::basic_string<Uint32> m_string; ///< Internal string of UTF-32 characters
+      |                             ^
+/usr/include/SFML/System/String.hpp:527:29: error: template argument 2 is invalid
+/usr/include/SFML/System/String.hpp:527:29: error: template argument 3 is invalid
+In file included from /usr/include/SFML/System/String.hpp:614:
+/usr/include/SFML/System/String.inl: In static member function ‘static sf::String sf::String::fromUtf32(T, T)’:
+/usr/include/SFML/System/String.inl:51:21: error: request for member ‘assign’ in ‘string.m_string’, which is of non-class type ‘int’
+   51 |     string.m_string.assign(begin, end);
+      |                     ^~~~~~
+In file included from /usr/include/SFML/Window/Context.hpp:33,
+                 from /usr/include/SFML/Window.hpp:34:
+/usr/include/SFML/Window/ContextSettings.hpp: At global scope:
+/usr/include/SFML/Window/ContextSettings.hpp:81:5: error: ‘Uint32’ does not name a type; did you mean ‘uint32_t’?
+   81 |     Uint32       attributeFlags;    ///< The attribute flags to create the context with
+      |     ^~~~~~
+      |     uint32_t
+/usr/include/SFML/Window/ContextSettings.hpp: In constructor ‘sf::ContextSettings::ContextSettings(unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, bool)’:
+/usr/include/SFML/Window/ContextSettings.hpp:68:5: error: class ‘sf::ContextSettings’ does not have any field named ‘attributeFlags’
+   68 |     attributeFlags   (attributes),
+      |     ^~~~~~~~~~~~~~
+/usr/include/SFML/Window/Context.hpp: At global scope:
+/usr/include/SFML/Window/Context.hpp:133:12: error: ‘Uint64’ does not name a type; did you mean ‘uint64_t’?
+  133 |     static Uint64 getActiveContextId();
+      |            ^~~~~~
+      |            uint64_t
+In file included from /usr/include/SFML/Window.hpp:36:
+/usr/include/SFML/Window/Cursor.hpp:144:31: error: ‘Uint8’ does not name a type
+  144 |     bool loadFromPixels(const Uint8* pixels, Vector2u size, Vector2u hotspot);
+      |                               ^~~~~
+In file included from /usr/include/SFML/Window.hpp:37:
+/usr/include/SFML/Window/Event.hpp:77:9: error: ‘Uint32’ does not name a type; did you mean ‘uint32_t’?
+   77 |         Uint32 unicode; ///< UTF-32 Unicode value of the character
+      |         ^~~~~~
+      |         uint32_t
+In file included from /usr/include/SFML/Window.hpp:44:
+/usr/include/SFML/Window/Window.hpp:90:49: error: ‘Uint32’ has not been declared
+   90 |     Window(VideoMode mode, const String& title, Uint32 style = Style::Default, const ContextSettings& settings = ContextSettings());
+      |                                                 ^~~~~~
+/usr/include/SFML/Window/Window.hpp:133:54: error: ‘Uint32’ has not been declared
+  133 |     void create(VideoMode mode, const String& title, Uint32 style = Style::Default, const ContextSettings& settings = ContextSettings());
+      |                                                      ^~~~~~
+/usr/include/SFML/Window/Window.hpp:315:65: error: ‘Uint8’ does not name a type
+  315 |     void setIcon(unsigned int width, unsigned int height, const Uint8* pixels);
+      |                                                                 ^~~~~
+sword_game.cpp:36:5: error: ‘Color’ does not name a type
+   36 |     Color color;
+      |     ^~~~~
+sword_game.cpp: In function ‘int main()’:
+sword_game.cpp:42:5: error: ‘RenderWindow’ was not declared in this scope
+   42 |     RenderWindow window(VideoMode(1200, 800), "Top-Down Gun Game");
+      |     ^~~~~~~~~~~~
+sword_game.cpp:43:5: error: ‘window’ was not declared in this scope
+   43 |     window.setFramerateLimit(60);
+      |     ^~~~~~
+sword_game.cpp:45:5: error: ‘View’ was not declared in this scope
+   45 |     View camera(FloatRect(0, 0, 1200, 800));
+      |     ^~~~
+sword_game.cpp:76:5: error: ‘Font’ was not declared in this scope
+   76 |     Font font;
+      |     ^~~~
+sword_game.cpp:77:5: error: ‘font’ was not declared in this scope
+   77 |     font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf");
+      |     ^~~~
+sword_game.cpp:115:114: error: ‘Color’ has not been declared
+  115 |         particles.push_back({playerPos, Vector2f((rand()%100-50)/50.f, (rand()%100-50)/50.f)*50.f, 0.5f, Color::Yellow, 2.0f});
+      |                                                                                                          ^~~~~
+
+sword_game.cpp:115:36: error: no matching function for call to ‘std::vector<Particle>::push_back(<brace-enclosed initializer list>)’
+  115 |                 particles.push_back({playerPos, Vector2f((rand()%100-50)/50.f, (rand()%100-50)/50.f)*50.f, 0.5f, Color::Yellow, 2.0f});
+      |                 ~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /usr/include/c++/12/vector:64,
+                 from /usr/include/SFML/Window/VideoMode.hpp:32,
+                 from /usr/include/SFML/Window.hpp:43:
+/usr/include/c++/12/bits/stl_vector.h:1276:7: note: candidate: ‘void std::vector<_Tp, _Alloc>::push_back(const value_type&) [with _Tp = Particle; _Alloc = std::allocator<Particle>; value_type = Particle]’
+ 1276 |       push_back(const value_type& __x)
+      |       ^~~~~~~~~
+/usr/include/c++/12/bits/stl_vector.h:1276:35: note:   no known conversion for argument 1 from ‘<brace-enclosed initializer list>’ to ‘const std::vector<Particle>::value_type&’ {aka ‘const Particle&’}
+ 1276 |       push_back(const value_type& __x)
+      |                 ~~~~~~~~~~~~~~~~~~^~~
+/usr/include/c++/12/bits/stl_vector.h:1293:7: note: candidate: ‘void std::vector<_Tp, _Alloc>::push_back(value_type&&) [with _Tp = Particle; _Alloc = std::allocator<Particle>; value_type = Particle]’
+ 1293 |       push_back(value_type&& __x)
+      |       ^~~~~~~~~
+/usr/include/c++/12/bits/stl_vector.h:1293:30: note:   no known conversion for argument 1 from ‘<brace-enclosed initializer list>’ to ‘std::vector<Particle>::value_type&&’ {aka ‘Particle&&’}
+ 1293 |       push_back(value_type&& __x)
+      |                 ~~~~~~~~~~~~~^~~
+sword_game.cpp:160:21: error: ‘Color’ was not declared in this scope
+  160 |                     Color col = Color(255, 120 + rand() % 100, 0);
+      |                     ^~~~~
+sword_game.cpp:161:117: error: ‘col’ was not declared in this scope; did you mean ‘cosl’?
+  161 |          particles.push_back({e.pos, Vector2f((rand()%200-100)/50.f, (rand()%200-100)/50.f)*100.f, 0.6f, col, 3.0f});
+      |                                                                                                          ^~~
+      |                                                                                                          cosl
+sword_game.cpp:161:40: error: no matching function for call to ‘std::vector<Particle>::push_back(<brace-enclosed initializer list>)’
+  161 |                     particles.push_back({e.pos, Vector2f((rand()%200-100)/50.f, (rand()%200-100)/50.f)*100.f, 0.6f, col, 3.0f});
+      |                     ~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/include/c++/12/bits/stl_vector.h:1276:7: note: candidate: ‘void std::vector<_Tp, _Alloc>::push_back(const value_type&) [with _Tp = Particle; _Alloc = std::allocator<Particle>; value_type = Particle]’
+ 1276 |       push_back(const value_type& __x)
+      |       ^~~~~~~~~
+/usr/include/c++/12/bits/stl_vector.h:1276:35: note:   no known conversion for argument 1 from ‘<brace-enclosed initializer list>’ to ‘const std::vector<Particle>::value_type&’ {aka ‘const Particle&’}
+ 1276 |       push_back(const value_type& __x)
+      |                 ~~~~~~~~~~~~~~~~~~^~~
+/usr/include/c++/12/bits/stl_vector.h:1293:7: note: candidate: ‘void std::vector<_Tp, _Alloc>::push_back(value_type&&) [with _Tp = Particle; _Alloc = std::allocator<Particle>; value_type = Particle]’
+ 1293 |       push_back(value_type&& __x)
+      |       ^~~~~~~~~
+/usr/include/c++/12/bits/stl_vector.h:1293:30: note:   no known conversion for argument 1 from ‘<brace-enclosed initializer list>’ to ‘std::vector<Particle>::value_type&&’ {aka ‘Particle&&’}
+ 1293 |       push_back(value_type&& __x)
+      |                 ~~~~~~~~~~~~~^~~
+sword_game.cpp:200:9: error: ‘camera’ was not declared in this scope
+  200 |         camera.setCenter(camPos);
+      |         ^~~~~~
+sword_game.cpp:203:22: error: ‘Color’ was not declared in this scope
+  203 |         window.clear(Color(30, 30, 30));
+      |                      ^~~~~
+sword_game.cpp:207:13: error: ‘RectangleShape’ was not declared in this scope
+  207 |             RectangleShape flash(Vector2f(1200, 800));
+      |             ^~~~~~~~~~~~~~
+sword_game.cpp:208:13: error: ‘flash’ was not declared in this scope; did you mean ‘fflush’?
+  208 |             flash.setFillColor(Color(255, 255, 255, int(255 * (screenFlash / 0.2f))));
+      |             ^~~~~
+      |             fflush
+sword_game.cpp:212:9: error: ‘CircleShape’ was not declared in this scope
+  212 |         CircleShape player(15);
+      |         ^~~~~~~~~~~
+sword_game.cpp:213:9: error: ‘player’ was not declared in this scope; did you mean ‘playerPos’?
+  213 |         player.setOrigin(15, 15);
+      |         ^~~~~~
+      |         playerPos
+sword_game.cpp:215:29: error: ‘Color’ is not a class, namespace, or enumeration
+  215 |         player.setFillColor(Color::White);
+      |                             ^~~~~
+sword_game.cpp:220:17: error: ‘Vertex’ was not declared in this scope
+  220 |                 Vertex line[] = {
+      |                 ^~~~~~
+sword_game.cpp:224:29: error: ‘line’ was not declared in this scope
+  224 |                 window.draw(line, 2, Lines);
+      |                             ^~~~
+sword_game.cpp:224:38: error: ‘Lines’ was not declared in this scope
+  224 |                 window.draw(line, 2, Lines);
+      |                                      ^~~~~
+sword_game.cpp:226:24: error: expected ‘;’ before ‘bullet’
+  226 |             CircleShape bullet(5);
+      |                        ^~~~~~~
+      |                        ;
+sword_game.cpp:227:13: error: ‘bullet’ was not declared in this scope; did you mean ‘Bullet’?
+  227 |             bullet.setOrigin(5, 5);
+      |             ^~~~~~
+      |             Bullet
+sword_game.cpp:229:33: error: ‘Color’ is not a class, namespace, or enumeration
+  229 |             bullet.setFillColor(Color::White);
+      |                                 ^~~~~
+sword_game.cpp:235:24: error: expected ‘;’ before ‘enemy’
+  235 |             CircleShape enemy(15);
+      |                        ^~~~~~
+      |                        ;
+sword_game.cpp:236:13: error: ‘enemy’ was not declared in this scope; did you mean ‘Enemy’?
+  236 |             enemy.setOrigin(15, 15);
+      |             ^~~~~
+      |             Enemy
+sword_game.cpp:244:24: error: expected ‘;’ before ‘boom’
+  244 |             CircleShape boom(size);
+      |                        ^~~~~
+      |                        ;
+sword_game.cpp:245:13: error: ‘boom’ was not declared in this scope; did you mean ‘bool’?
+  245 |             boom.setOrigin(size, size);
+      |             ^~~~
+      |             bool
+sword_game.cpp:252:24: error: expected ‘;’ before ‘dot’
+  252 |             CircleShape dot(p.size);
+      |                        ^~~~
+      |                        ;
+sword_game.cpp:253:13: error: ‘dot’ was not declared in this scope; did you mean ‘dt’?
+  253 |             dot.setOrigin(p.size, p.size);
+      |             ^~~
+      |             dt
+sword_game.cpp:255:32: error: ‘struct Particle’ has no member named ‘color’
+  255 |             dot.setFillColor(p.color);
+      |                                ^~~~~
+sword_game.cpp:259:9: error: ‘Text’ was not declared in this scope
+  259 |         Text uiText("Kills: " + std::to_string(kills), font, 20);
+      |         ^~~~
+sword_game.cpp:260:9: error: ‘uiText’ was not declared in this scope
+  260 |         uiText.setFillColor(Color::White);
+      |         ^~~~~~
+sword_game.cpp:260:29: error: ‘Color’ is not a class, namespace, or enumeration
+  260 |         uiText.setFillColor(Color::White);
+      |                             ^~~~~
